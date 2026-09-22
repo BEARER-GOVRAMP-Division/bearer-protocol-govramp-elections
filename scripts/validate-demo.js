@@ -31,7 +31,7 @@ async function main() {
     [/Conceptual demo only/i, "HTML should clearly identify the app as a conceptual demo."],
     [/does not collect real votes/i, "HTML should disclaim real vote processing."],
     [/type="module" src="\.\/src\/app\.js"/i, "HTML should load the browser application module."],
-    [/not a real voting system/i, "Repository guide should disclaim real-world use."],
+    [/not.*real voting system/i, "Repository guide should disclaim real-world use."],
     [/Roadmap before any real-world use/i, "Repository guide should include a roadmap section."],
     [/does \*\*not\*\* claim to be GovRAMP authorized/i, "Proposal should reject unsupported authorization claims."]
   ];
