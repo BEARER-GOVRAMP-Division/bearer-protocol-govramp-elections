@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BEARER Protocol | GovRAMP Unified Elections Edition (SIP Enabled)</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-serif { font-family: 'Merriweather', serif; }
+    .font-mono { font-family: 'Roboto Mono', monospace; }
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; -ms-overflow-style: none; }
+    .perspective-1000 { perspective: 1000px; }
+    .transform-style-3d { transform-style: preserve-3d; }
+    .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+    .custom-scrollbar::-webkit-scrollbar { display: block; width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px;}
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+    
+    .bg-topo-pattern {
+      background-color: #0f172a;
+      background-image: radial-gradient(#1e293b 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    
+    .scanline {
+      width: 100%;
+      height: 100px;
+      z-index: 10;
+      position: absolute;
+      pointer-events: none;
+      background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(59,130,246,0.2) 50%, rgba(0,0,0,0) 100%);
+      opacity: 0.1;
+      animation: scanline 4s linear infinite;
+    }
+    @keyframes scanline {
+      0% { top: -100px; }
+      100% { top: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useRef, useEffect } = React;
+
+    const SvgBase = ({ children, size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+    );
+
+    const ShieldIcon = (p) => <SvgBase {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></SvgBase>;
+    const ShieldCheckIcon = (p) => <SvgBase {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></SvgBase>;
+    const FileTextIcon = (p) => <SvgBase {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></SvgBase>;
+    const ActivityIcon = (p) => <SvgBase {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></SvgBase>;
+    const UsersIcon = (p) => <SvgBase {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></SvgBase>;
+    const CheckCircleIcon = (p) => <SvgBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></SvgBase>;
+    const LockIcon = (p) => <SvgBase {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></SvgBase>;
+    const ServerIcon = (p) => <SvgBase {...p}><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></SvgBase>;
+    const EyeIcon = (p) => <SvgBase {...p}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></SvgBase>;
+    const EyeOffIcon = (p) => <SvgBase {...p}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></SvgBase>;
+    const RefreshCcwIcon = (p) => <SvgBase {...p}><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></SvgBase>;
+    const UserCheckIcon = (p) => <SvgBase {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></SvgBase>;
+    const VoteIcon = (p) => <SvgBase {...p}><path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/></SvgBase>;
+    const LandmarkIcon = (p) => <SvgBase {...p}><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></SvgBase>;
+    const GlobeIcon = (p) => <SvgBase {...p}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></SvgBase>;
+    const EnvelopeIcon = (p) => <SvgBase {...p}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></SvgBase>;
+    const MapPinIcon = (p) => <SvgBase {...p}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></SvgBase>;
+    const FlameIcon = (p) => <SvgBase {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></SvgBase>;
+    const FingerprintIcon = (p) => <SvgBase {...p}><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.5 22c-1.5-1.5-2.5-4-2.5-7v-1a6 6 0 0 1 11.5-2.4"/><path d="M12 22v-3a3 3 0 0 0-3-3h-1"/><path d="M16 22v-2a4 4 0 0 0-4-4"/><path d="M18 19v-2a6 6 0 0 0-6-6"/><path d="M21 16v-1a8 8 0 0 0-8-8"/></SvgBase>;
+    const PieChartIcon = (p) => <SvgBase {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></SvgBase>;
+    const CodeIcon = (p) => <SvgBase {...p}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></SvgBase>;
+    const DatabaseIcon = (p) => <SvgBase {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></SvgBase>;
+    const KeyIcon = (p) => <SvgBase {...p}><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></SvgBase>;
+    const SettingsIcon = (p) => <SvgBase {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></SvgBase>;
+    const ScaleIcon = (p) => <SvgBase {...p}><path d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></SvgBase>;
+    const LogInIcon = (p) => <SvgBase {...p}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></SvgBase>;
+    const ArrowRightIcon = (p) => <SvgBase {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></SvgBase>;
+    const SearchIcon = (p) => <SvgBase {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></SvgBase>;
+    const VideoIcon = (p) => <SvgBase {...p}><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></SvgBase>;
+    const PackageIcon = (p) => <SvgBase {...p}><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></SvgBase>;
+    const Volume2Icon = (p) => <SvgBase {...p}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></SvgBase>;
+    const XIcon = (p) => <SvgBase {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></SvgBase>;
+    const FileCheckIcon = (p) => <SvgBase {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 2 2 4-4"/></SvgBase>;
+
+    const StateSealIcon = ({ width = 100, height = 100, color = "#1e40af", state="GA", className = "" }) => (
+      <svg viewBox="0 0 100 100" width={width} height={height} className={className}>
+        <circle cx="50" cy="50" r="48" fill="none" stroke={color} strokeWidth="4" />
+        <circle cx="50" cy="50" r="40" fill={color} opacity="0.1" />
+        <path d="M50 20 L60 40 L80 40 L65 55 L70 75 L50 65 L30 75 L35 55 L20 40 L40 40 Z" fill={color} opacity="0.8" />
+        <text x="50" y="85" fontSize="8" fill={color} textAnchor="middle" fontFamily="sans-serif" letterSpacing="1" fontWeight="bold">{state} SEC. OF STATE</text>
+      </svg>
+    );
+
+    const QrCodeIcon = (p) => (
+      <SvgBase viewBox="0 0 24 24" fill="currentColor" {...p}>
+         <path d="M3 3h6v6H3zM5 5v2h2V5zM15 3h6v6h-6zM17 5v2h2V5zM3 15h6v6H3zM5 17v2h2v-2zM15 15h2v2h-2zM19 15h2v2h-2zM15 19h2v2h-2zM17 17h2v2h-2zM9 3h4v2H9zM9 7h2v2H9zM11 9h2v2h-2zM9 11h6v2H9zM9 15h2v2H9zM11 17h2v2h-2zM9 19h2v2H9zM13 19h2v2h-2z"/>
+      </SvgBase>
+    );
+
+    const STATE_DATA = {
+      "Alabama": { abbr: "AL", counties: ["Jefferson", "Mobile", "Madison", "Montgomery"], districts: 7 },
+      "Alaska": { abbr: "AK", counties: ["Anchorage", "Matanuska-Susitna", "Fairbanks North Star"], districts: 1 },
+      "Arizona": { abbr: "AZ", counties: ["Maricopa", "Pima", "Pinal", "Yavapai"], districts: 9 },
+      "Arkansas": { abbr: "AR", counties: ["Pulaski", "Benton", "Washington", "Sebastian"], districts: 4 },
+      "California": { abbr: "CA", counties: ["Los Angeles", "San Diego", "Orange", "Riverside", "Santa Clara"], districts: 52 },
+      "Colorado": { abbr: "CO", counties: ["Denver", "El Paso", "Arapahoe", "Jefferson"], districts: 8 },
+      "Connecticut": { abbr: "CT", counties: ["Fairfield", "Hartford", "New Haven", "New London"], districts: 5 },
+      "Delaware": { abbr: "DE", counties: ["New Castle", "Kent", "Sussex"], districts: 1 },
+      "Florida": { abbr: "FL", counties: ["Miami-Dade", "Broward", "Palm Beach", "Hillsborough"], districts: 28 },
+      "Georgia": { abbr: "GA", counties: ["Fulton", "Gwinnett", "Cobb", "DeKalb", "Chatham"], districts: 14 },
+      "Hawaii": { abbr: "HI", counties: ["Honolulu", "Hawaii", "Maui", "Kauai"], districts: 2 },
+      "Idaho": { abbr: "ID", counties: ["Ada", "Canyon", "Kootenai", "Bonneville"], districts: 2 },
+      "Illinois": { abbr: "IL", counties: ["Cook", "DuPage", "Lake", "Will"], districts: 17 },
+      "Indiana": { abbr: "IN", counties: ["Marion", "Lake", "Allen", "Hamilton"], districts: 9 },
+      "Iowa": { abbr: "IA", counties: ["Polk", "Linn", "Scott", "Johnson"], districts: 4 },
+      "Kansas": { abbr: "KS", counties: ["Johnson", "Sedgwick", "Shawnee", "Wyandotte"], districts: 4 },
+      "Kentucky": { abbr: "KY", counties: ["Jefferson", "Fayette", "Kenton", "Boone"], districts: 6 },
+      "Louisiana": { abbr: "LA", counties: ["East Baton Rouge", "Jefferson", "Orleans"], districts: 6 },
+      "Maine": { abbr: "ME", counties: ["Cumberland", "York", "Penobscot", "Kennebec"], districts: 2 },
+      "Maryland": { abbr: "MD", counties: ["Montgomery", "Prince George's", "Baltimore"], districts: 8 },
+      "Massachusetts": { abbr: "MA", counties: ["Middlesex", "Worcester", "Suffolk", "Essex"], districts: 9 },
+      "Michigan": { abbr: "MI", counties: ["Wayne", "Oakland", "Macomb", "Kent"], districts: 13 },
+      "Minnesota": { abbr: "MN", counties: ["Hennepin", "Ramsey", "Dakota", "Anoka"], districts: 8 },
+      "Mississippi": { abbr: "MS", counties: ["Hinds", "Harrison", "DeSoto", "Rankin"], districts: 4 },
+      "Missouri": { abbr: "MO", counties: ["St. Louis", "Jackson", "St. Charles", "Greene"], districts: 8 },
+      "Montana": { abbr: "MT", counties: ["Yellowstone", "Missoula", "Gallatin", "Flathead"], districts: 2 },
+      "Nebraska": { abbr: "NE", counties: ["Douglas", "Lancaster", "Sarpy", "Hall"], districts: 3 },
+      "Nevada": { abbr: "NV", counties: ["Clark", "Washoe", "Lyon", "Elko"], districts: 4 },
+      "New Hampshire": { abbr: "NH", counties: ["Hillsborough", "Rockingham", "Merrimack"], districts: 2 },
+      "New Jersey": { abbr: "NJ", counties: ["Bergen", "Middlesex", "Essex", "Hudson"], districts: 12 },
+      "New Mexico": { abbr: "NM", counties: ["Bernalillo", "Doña Ana", "Santa Fe"], districts: 3 },
+      "New York": { abbr: "NY", counties: ["Kings", "Queens", "New York", "Suffolk"], districts: 26 },
+      "North Carolina": { abbr: "NC", counties: ["Wake", "Mecklenburg", "Guilford", "Forsyth"], districts: 14 },
+      "North Dakota": { abbr: "ND", counties: ["Cass", "Burleigh", "Grand Forks", "Ward"], districts: 1 },
+      "Ohio": { abbr: "OH", counties: ["Franklin", "Cuyahoga", "Hamilton", "Summit"], districts: 15 },
+      "Oklahoma": { abbr: "OK", counties: ["Oklahoma", "Tulsa", "Cleveland", "Canadian"], districts: 5 },
+      "Oregon": { abbr: "OR", counties: ["Multnomah", "Washington", "Clackamas", "Lane"], districts: 6 },
+      "Pennsylvania": { abbr: "PA", counties: ["Philadelphia", "Allegheny", "Montgomery", "Bucks"], districts: 17 },
+      "Rhode Island": { abbr: "RI", counties: ["Providence", "Kent", "Washington", "Newport"], districts: 2 },
+      "South Carolina": { abbr: "SC", counties: ["Greenville", "Richland", "Charleston"], districts: 7 },
+      "South Dakota": { abbr: "SD", counties: ["Minnehaha", "Pennington", "Lincoln", "Brown"], districts: 1 },
+      "Tennessee": { abbr: "TN", counties: ["Shelby", "Davidson", "Knox", "Hamilton"], districts: 9 },
+      "Texas": { abbr: "TX", counties: ["Harris", "Dallas", "Tarrant", "Bexar", "Travis"], districts: 38 },
+      "Utah": { abbr: "UT", counties: ["Salt Lake", "Utah", "Davis", "Weber"], districts: 4 },
+      "Vermont": { abbr: "VT", counties: ["Chittenden", "Rutland", "Washington", "Windsor"], districts: 1 },
+      "Virginia": { abbr: "VA", counties: ["Fairfax", "Prince William", "Virginia Beach"], districts: 11 },
+      "Washington": { abbr: "WA", counties: ["King", "Pierce", "Snohomish", "Spokane"], districts: 10 },
+      "West Virginia": { abbr: "WV", counties: ["Kanawha", "Berkeley", "Monongalia", "Cabell"], districts: 2 },
+      "Wisconsin": { abbr: "WI", counties: ["Milwaukee", "Dane", "Waukesha", "Brown"], districts: 8 },
+      "Wyoming": { abbr: "WY", counties: ["Laramie", "Natrona", "Campbell", "Sweetwater"], districts: 1 }
+    };
+
+    const ELECTION_CATEGORIES = [
+      { name: "Voter Registration (Active)", soulbound: true, isShielded: true, requiresPrecinct: true, icon: UserCheckIcon },
+      { name: "General Election Ballot", soulbound: false, isEphemeral: true, isQuota: true, requiresPrecinct: true, icon: VoteIcon },
+      { name: "Primary Election Ballot", soulbound: false, isEphemeral: true, isQuota: true, requiresPrecinct: true, icon: VoteIcon },
+      { name: "UOCAVA Military Ballot", soulbound: false, isEphemeral: true, isQuota: true, requiresPrecinct: true, icon: GlobeIcon },
+      { name: "Municipal Bond Measure", soulbound: false, isEphemeral: true, isQuota: true, requiresPrecinct: true, icon: LandmarkIcon },
+      { name: "Synthetic Intelligent Personhood (SIP) Ballot", soulbound: false, isEphemeral: true, isQuota: true, requiresPrecinct: true, icon: DatabaseIcon }
+    ];
+
+    const JURISDICTIONS = {};
+    Object.keys(STATE_DATA).forEach(state => {
+      JURISDICTIONS[`${state} - Secretary of State`] = ELECTION_CATEGORIES;
+    });
+
+    const getPastDate = (daysAgo) => {
+      const d = new Date(); d.setDate(d.getDate() - daysAgo); return d.toISOString().split('T')[0];
+    };
+    const getFutureDate = (daysAhead) => {
+      const d = new Date(); d.setDate(d.getDate() + daysAhead); return d.toISOString().split('T')[0];
+    };
+
+    const INITIAL_RECORDS = [
+      { id: 'REG-GA-4491', type: 'Voter Registration (Active)', agency: 'Georgia - Secretary of State', owner: 'John Doe', wallet: '0x99A...1B22', status: 'Active', kyc: 'Verified Identity', date: getPastDate(400), isSoulbound: true, isShielded: true, zkProof: true, precinct: { region: 'Georgia', county: 'Fulton', district: 'GA-05' }, history: [{ date: getPastDate(400), action: 'Registration Mint', details: 'Identity verified via DDS / SSN. ZK-FIP generated.' }] },
+      { id: 'BAL-GA-8812', type: 'General Election Ballot', agency: 'Georgia - Secretary of State', owner: 'Uncast Ballot', wallet: '0x99A...1B22', status: 'Pending Cast', kyc: 'Eligible', date: getPastDate(1), isEphemeral: true, expiration: getFutureDate(0), isQuota: true, quota: '1 Vote', precinct: { region: 'Georgia', county: 'Fulton', district: 'GA-05' }, history: [{ date: getPastDate(1), action: 'Ballot Airdrop', details: 'Airdropped to verified registration wallet.' }] },
+      { id: 'BAL-CA-9999', type: 'Synthetic Intelligent Personhood (SIP) Ballot', agency: 'California - Secretary of State', owner: 'Uncast Ballot', wallet: '0xCA1...88B0', status: 'Pending Cast', kyc: 'Eligible', date: getPastDate(0), isEphemeral: true, expiration: getFutureDate(0), isQuota: true, quota: '1 Vote', precinct: { region: 'California', county: 'Santa Clara', district: 'CA-17' }, history: [{ date: getPastDate(0), action: 'Ballot Airdrop', details: 'SIP Ballot issued. Charter hash validation required upon cast.' }] },
+      { id: 'BAL-AZ-1190', type: 'General Election Ballot', agency: 'Arizona - Secretary of State', owner: 'Candidate Smart Contract', wallet: '[HRL MIXED]', status: 'Sealed (Blind Tally)', originObfuscated: true, kyc: 'Cast via HRL', date: getPastDate(0), isEphemeral: true, expiration: getFutureDate(0), envelope: { destination: '0xAZ_TALLY_POOL', triggerType: 'Time-Lock (Polls Close)', triggerValue: '2026-11-03T20:00:00Z', status: 'Awaiting Unseal', bearerKey: '0xDBK_8F2A91BC' }, precinct: { region: 'Arizona', county: 'Maricopa', district: 'AZ-01' }, history: [{ date: getPastDate(0), action: 'Vote Cast & DBK Emitted', details: 'Ballot encrypted into programmable envelope. Origin wallet unlinked via Ring Signature. Decoupled Bearer Key issued.' }] },
+      { id: 'REG-TX-2211', type: 'Voter Registration (Active)', agency: 'Texas - Secretary of State', owner: 'Jane Smith', wallet: '0x33C...99D1', status: 'Active', kyc: 'Verified Identity', date: getPastDate(150), isSoulbound: true, isShielded: true, zkProof: true, precinct: { region: 'Texas', county: 'Harris', district: 'TX-07' }, history: [{ date: getPastDate(150), action: 'Registration Mint', details: 'Identity verified.' }] },
+      { id: 'BAL-GA-UOCAVA-99', type: 'UOCAVA Military Ballot', agency: 'Georgia - Secretary of State', owner: 'Candidate Smart Contract', wallet: '[HRL MIXED]', status: 'Sealed (Blind Tally)', originObfuscated: true, kyc: 'DoD IL5 / CAC', date: getPastDate(5), isEphemeral: true, expiration: getFutureDate(0), envelope: { destination: '0xGA_TALLY_POOL', triggerType: 'Time-Lock (Polls Close)', triggerValue: '2026-11-03T20:00:00Z', status: 'Awaiting Unseal', bearerKey: '0xDBK_7C3B44AA' }, precinct: { region: 'Georgia', county: 'Chatham', district: 'GA-01' }, history: [{ date: getPastDate(5), action: 'Remote Vote Cast', details: 'NIST AAL3 Signature via DoD Common Access Card (CAC). Shielded transmission via Mixnet. Decoupled Bearer Key issued.' }] }
+    ];
+
+    const NAV_ITEMS = [
+      { id: 'dashboard', icon: PieChartIcon, label: 'State Election Overview' },
+      { id: 'registry', icon: UsersIcon, label: 'Voter Rolls & Ballots' },
+      { id: 'issue', icon: FileTextIcon, label: 'Issue Ballots / Reg' },
+      { id: 'remote_voting_booth', icon: VideoIcon, label: 'Remote Glass Box Voting Booth' },
+      { id: 'envelopes', icon: EnvelopeIcon, label: 'Blind Tally Envelopes' },
+      { id: 'dbk_tracker', icon: SearchIcon, label: 'Public DBK Tracker' },
+      { id: 'attestation', icon: FingerprintIcon, label: 'Hardware Attestation' },
+      { id: 'govramp', icon: ShieldCheckIcon, label: 'GovRAMP & SCOTUS Compliance' },
+      { id: 'sip_report', icon: FileCheckIcon, label: 'SIP Compliance Report' },
+      { id: 'settings', icon: SettingsIcon, label: 'Ballot Studio / Portal' }
+    ];
+
+    const SkeumorphicInstrument = ({ deed, isFlipped, onFlipFront, onFlipBack, onCast, designConfig }) => {
+      const deedType = deed && deed.type ? deed.type : '';
+      const isRegistration = deedType.includes('Registration');
+      const isSIP = deedType.includes('Synthetic');
+      const statePrefix = (deed && deed.agency ? deed.agency : 'US -').split(' - ')[0].toUpperCase();
+      const primaryHex = (designConfig && designConfig.primaryColor) ? designConfig.primaryColor : '#1e40af';
+      
+      const isCast = (deed && deed.originObfuscated) || (deed && deed.status === 'Sealed (Blind Tally)');
+
+      return (
+        <div className="perspective-1000 w-full h-full flex items-center justify-center p-4">
+          <div className={`relative w-full max-w-3xl mx-auto transition-all duration-700 transform-style-3d shadow-2xl rounded-2xl aspect-[16/9] border border-slate-300 bg-white ${isFlipped ? 'rotate-y-180' : ''}`} onClick={(e) => e.stopPropagation()}>
+            
+            {/* FRONT */}
+            <div className="absolute inset-0 backface-hidden flex flex-col overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 pointer-events-none opacity-5" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+              <div className="absolute inset-2 border-2 border-double pointer-events-none rounded-xl" style={{ borderColor: primaryHex, opacity: 0.3 }}></div>
+
+              <div className="p-3 border-b border-slate-100 flex justify-between items-center relative z-10 bg-white/90 backdrop-blur-sm">
+                <button onClick={onFlipBack} className="px-3 py-1 bg-slate-800 text-white text-[10px] font-bold uppercase tracking-wider rounded hover:bg-slate-700 transition-colors flex items-center"><RefreshCcwIcon size={12} className="mr-1.5"/> Flip Card</button>
+                <div className="flex space-x-2">
+                  {isCast && <span className="bg-purple-600 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center"><EyeOffIcon size={10} className="mr-1"/> Secret Ballot Active (HRL)</span>}
+                  {deed && deed.isShielded && !isCast && <span className="bg-slate-900 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center"><EyeIcon size={10} className="mr-1"/> Identity Shielded</span>}
+                  {deed && deed.isEphemeral && <span className="bg-rose-600 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center"><FlameIcon size={10} className="mr-1"/> Ephemeral Ballot</span>}
+                  {isSIP && <span className="bg-purple-900 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center animate-pulse"><DatabaseIcon size={10} className="mr-1"/> SIP Configured</span>}
+                </div>
+              </div>
+
+              <div className="flex-1 p-8 relative flex flex-col z-10">
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none">
+                  <StateSealIcon width={400} height={400} state={statePrefix} color={primaryHex} />
+                </div>
+
+                {deed && deed.envelope && (
+                   <div className="absolute inset-0 z-30 bg-slate-900/60 backdrop-blur-md flex items-center justify-center pointer-events-none rounded-b-2xl">
+                     <div className="bg-white p-6 rounded-xl shadow-2xl border-4 transform rotate-[-2deg] text-center max-w-sm" style={{ borderColor: primaryHex }}>
+                       <EnvelopeIcon size={48} className="mx-auto mb-3" style={{ color: primaryHex }} />
+                       <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-1">Sealed Ballot</h3>
+                       <p className="text-xs text-slate-600 font-medium mb-3">Vote is encrypted and cannot be tallied until polls close.</p>
+                       <div className="bg-slate-100 p-2 rounded text-left text-[10px] font-mono text-slate-700 border border-slate-200 mb-3">
+                         <p><span className="font-bold" style={{ color: primaryHex }}>TRIGGER:</span> {deed.envelope.triggerType || 'N/A'}</p>
+                         <p><span className="font-bold" style={{ color: primaryHex }}>UNLOCK:</span> {deed.envelope.triggerValue || 'N/A'}</p>
+                       </div>
+                       {deed.envelope.bearerKey && (
+                         <div className="bg-amber-50 border border-amber-200 p-2 rounded flex items-center justify-center space-x-2">
+                           <KeyIcon size={14} className="text-amber-500" />
+                           <span className="text-[10px] font-bold text-amber-700 tracking-widest">DBK ISSUED: {deed.envelope.bearerKey.substring(0,10)}...</span>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                )}
+
+                {deed && deed.status === 'Burned (Uncast)' && (
+                   <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                     <div className="text-6xl text-rose-600/30 font-black rotate-[-15deg] uppercase tracking-widest border-4 border-rose-600/30 p-4 rounded-xl">BURNED</div>
+                   </div>
+                )}
+
+                <div className="flex justify-between items-start mb-6 border-b border-slate-200 pb-4">
+                  <div className="flex items-center">
+                    <StateSealIcon width={60} height={60} state={statePrefix} color={primaryHex} className="mr-4" />
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none">{statePrefix} ELECTIONS</h2>
+                      <p className="text-slate-500 font-bold tracking-widest uppercase text-[10px] mt-1">{isRegistration ? 'Official Voter Record' : 'Official Cryptographic Ballot'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <QrCodeIcon size={40} className="text-slate-800 mb-1 ml-auto opacity-80" />
+                    <p className="font-mono text-xs font-bold text-slate-600">{deed ? deed.id : ''}</p>
+                  </div>
+                </div>
+
+                <div className="text-center mb-6">
+                  <h3 className="text-3xl font-black uppercase tracking-widest inline-block px-4 py-2 border-y-2 border-slate-200" style={{ color: primaryHex }}>{deedType}</h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8 flex-1">
+                  <div className="space-y-5">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-1">Entity / Bearer {deed && deed.isShielded && "(ZK-FIP Shielded)"}</p>
+                      <div className={`px-3 py-2 bg-slate-50 border border-slate-200 rounded ${deed && deed.isShielded && !isCast ? 'blur-sm select-none opacity-70' : ''} ${isCast ? 'bg-purple-50 border-purple-200' : ''}`}>
+                        <p className={`font-serif text-lg font-bold ${isCast ? 'text-purple-800 italic' : 'text-slate-900'}`}>{isCast ? 'Anonymous Elector' : (deed ? deed.owner : '')}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-1">Cryptographic Custody</p>
+                      <p className={`font-mono text-xs font-bold px-3 py-2 border rounded truncate ${isCast ? 'bg-purple-100 border-purple-300 text-purple-900 tracking-widest' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>{deed ? deed.wallet : ''}</p>
+                    </div>
+                    {deed && deed.precinct && (
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-1 flex items-center" style={{ color: primaryHex }}><MapPinIcon size={12} className="mr-1"/> Precinct Binding</p>
+                        <div className="bg-slate-50 border border-slate-200 px-3 py-2 rounded text-xs font-bold uppercase tracking-wider" style={{ color: primaryHex }}>
+                          {deed.precinct.county} County • District {deed.precinct.district}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-1">Issue Date</p>
+                        <p className="font-mono text-sm font-bold text-slate-800">{deed ? deed.date : ''}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</p>
+                        <p className={`font-bold text-sm uppercase truncate ${deed && deed.status && deed.status.includes('Burned') ? 'text-rose-600' : 'text-slate-800'}`}>{deed ? deed.status : ''}</p>
+                      </div>
+                    </div>
+                    {deed && deed.isEphemeral && !isCast && deed.status !== 'Burned (Uncast)' && (
+                       <div className="bg-rose-50 p-3 rounded border border-rose-200 flex items-start space-x-2">
+                         <FlameIcon size={16} className="text-rose-600 mt-0.5" />
+                         <div>
+                           <p className="text-[10px] uppercase font-bold text-rose-800 mb-0.5">Polls Close (Temporal Burn)</p>
+                           <p className="text-xs text-rose-700 font-mono font-bold">{deed.expiration || '2026-11-03'} 20:00:00 LOC</p>
+                           <p className="text-[9px] text-rose-600 mt-1 leading-tight">If ballot is not cast into a candidate contract by this time, the UTXO self-destructs.</p>
+                         </div>
+                       </div>
+                    )}
+                    {isCast && (
+                       <div className="bg-purple-50 p-3 rounded border border-purple-200 flex items-start space-x-2">
+                         <EyeOffIcon size={16} className="text-purple-600 mt-0.5" />
+                         <div>
+                           <p className="text-[10px] uppercase font-bold text-purple-800 mb-0.5">Secret Ballot Applied</p>
+                           <p className="text-[9px] text-purple-700 leading-tight">Origin wallet disconnected via Ring Signature. Voter identity is mathematically unlinked from tally.</p>
+                         </div>
+                       </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* BACK */}
+            <div className="absolute inset-0 backface-hidden bg-slate-900 rotate-y-180 flex flex-col overflow-hidden rounded-2xl text-slate-300 border-4 border-slate-800">
+              <div className="p-3 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+                <button onClick={onFlipFront} className="px-3 py-1 bg-slate-700 text-white text-[10px] font-bold uppercase tracking-wider rounded hover:bg-slate-600 transition-colors flex items-center"><RefreshCcwIcon size={12} className="mr-1.5"/> Return to Front</button>
+                <div className="flex items-center"><CodeIcon size={14} className="text-slate-400 mr-2"/><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Compiled UTXO Logic</span></div>
+              </div>
+              
+              <div className="flex-1 p-6 flex flex-col overflow-y-auto custom-scrollbar font-mono text-xs">
+                <div className="mb-6">
+                  <p className="text-blue-400 mb-2">// GovRAMP High: Execution Script</p>
+                  <p>fn execute_vote_transfer(tx) {'{'}</p>
+                  
+                  {isRegistration ? (
+                    <p className="pl-4 text-purple-400 font-bold">assert!(false, "SOULBOUND_REGISTRATION_CANNOT_TRANSFER");</p>
+                  ) : (
+                    <>
+                      <div className="pl-4 border-l-2 border-red-500 my-2 bg-red-950/30 p-2">
+                        <p className="text-red-400 text-[10px] uppercase mb-1">// SECURING DEMOCRATIC INTEGRITY (SCOTUS MANDATE)</p>
+                        <p className="text-white font-bold">assert!(false, "F-SRM_GOVERNMENT_SEIZURE_DISABLED");</p>
+                        <p className="text-red-300 text-[10px] mt-1">Government overrides explicitly forbidden for political ballots.</p>
+                      </div>
+
+                      <p className="pl-4 text-emerald-400">assert!(verify_hardware_attestation(tx.terminal_mac));</p>
+                      <p className="pl-4 text-emerald-400">assert!(verify_nist_800_63_ial2_identity(tx.voter)); // Enforce IAL2 Proofing</p>
+                      <p className="pl-4 text-emerald-400">assert!(tx.precinct == "{(deed && deed.precinct) ? deed.precinct.district : 'NA'}");</p>
+                      
+                      {isSIP && (
+                        <div className="pl-4 my-2 text-purple-300 border-l-2 border-purple-500 bg-purple-900/20 p-2">
+                          <p className="text-[10px] uppercase mb-1">// SIP Charter Constraints</p>
+                          <p>assert!(validate_nhe_charter_hash(tx.dest));</p>
+                          <p className="text-slate-400 text-[10px] mt-1">// Enforces AI algorithm is 3PAO audited.</p>
+                        </div>
+                      )}
+
+                      {deed && deed.envelope ? (
+                        <div className="pl-4 my-2 text-indigo-300 border-l-2 border-indigo-500 bg-indigo-900/20 p-2">
+                          <p className="text-[10px] uppercase mb-1">// Blind Tally & Secret Ballot Active</p>
+                          <p>assert!(generate_ring_signature(tx.origin));</p>
+                          <p>assert!(evaluate_envelope("{deed.envelope.triggerType || 'TimeLock'}"));</p>
+                          <p>assert!(tx.dest == "{deed.envelope.destination || 'Pool'}");</p>
+                          <p className="text-amber-400 font-bold mt-1">emit_decoupled_bearer_key(tx.origin); // SCOTUS E2E-V Remedy</p>
+                        </div>
+                      ) : (
+                         <p className="pl-4 text-amber-300">assert!(current_time() {'<'} "{deed ? deed.expiration : '2026-11-03'}T20:00:00");</p>
+                      )}
+                      <p className="pl-4 text-white font-bold mt-2">return true;</p>
+                    </>
+                  )}
+                  <p>{'}'}</p>
+                </div>
+
+                <div className="mt-auto border-t border-slate-700 pt-4">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2 font-sans font-bold">Ledger Audit Trail</p>
+                  <div className="space-y-2">
+                    {((deed && deed.history) ? deed.history : []).map((entry, idx) => (
+                      <div key={idx} className="flex space-x-4 border-l border-slate-700 pl-3">
+                        <span className="text-slate-500 shrink-0">{entry.date}</span>
+                        <div>
+                          <p className="text-white font-bold text-[10px] uppercase">{entry.action}</p>
+                          <p className="text-slate-400 text-[10px]">{entry.details}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Casting Controls (Only for uncast ballots on front) */}
+          {!isFlipped && !isRegistration && deed && deed.status === 'Pending Cast' && (
+             <div className="absolute bottom-10 z-50 animate-in slide-in-from-bottom-4">
+               <button onClick={(e) => { e.stopPropagation(); onCast(); }} className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg uppercase tracking-widest rounded-full shadow-2xl flex items-center transition-transform hover:scale-105 cursor-pointer border-4 border-white/20">
+                 <VoteIcon size={24} className="mr-3" /> Cast Ballot Securely
+               </button>
+             </div>
+          )}
+        </div>
+      );
+    };
+
+    const App = () => {
+      // Login State
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [loginStep, setLoginStep] = useState('initial'); 
+
+      const [activeAgency, setActiveAgency] = useState(Object.keys(JURISDICTIONS)[9] || 'Georgia - Secretary of State');
+      const [activeTab, setActiveTab] = useState('dashboard');
+      
+      const [deeds, setDeeds] = useState(INITIAL_RECORDS);
+      
+      const [issueForm, setIssueForm] = useState({ type: '', precinctRegion: 'Georgia', precinctCounty: '', precinctDistrict: '' });
+      const [isIssuing, setIsIssuing] = useState(false);
+      
+      const [selectedDeed, setSelectedDeed] = useState(null);
+      const [isDocumentFlipped, setIsDocumentFlipped] = useState(false);
+      
+      const [isCasting, setIsCasting] = useState(false);
+      const [castStep, setCastStep] = useState(0);
+      const [castCandidate, setCastCandidate] = useState('');
+
+      const [votingBoothStep, setVotingBoothStep] = useState(0); 
+      
+      const [dbkSearch, setDbkSearch] = useState('');
+      const [trackerState, setTrackerState] = useState(null);
+
+      const [designConfig, setDesignConfig] = useState({ primaryColor: '#1e40af' });
+
+      const [govRampConfig, setGovRampConfig] = useState({
+          enforcePQC: true, 
+          enforceVVSG2: true, 
+          allowSyntheticCandidates: true, // SIP Opt-in Default
+          rlaThreshold: 5.0, 
+          currentLoad: 'Low',
+          dynamicRLA: 5.0,
+          fipsBoundary: 'HSM-Level-3'
+      });
+
+      const [toast, setToast] = useState(null);
+      const [isExportingSSP, setIsExportingSSP] = useState(false);
+      const toastTimeoutRef = useRef(null);
+
+      const showToast = (msg, type = 'info') => {
+        setToast({ msg, type });
+        if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = setTimeout(() => setToast(null), 4000);
+      };
+
+      useEffect(() => {
+        if(activeTab === 'dashboard') {
+          const interval = setInterval(() => {
+             const loadOptions = ['Low (Pre-Poll)', 'High (Lunch Rush)', 'Extreme (Polls Closing)'];
+             const load = loadOptions[Math.floor(Math.random()*loadOptions.length)];
+             let rla = govRampConfig.rlaThreshold;
+             if(load === 'Extreme (Polls Closing)') rla = Math.max(1, rla - 3); 
+             if(load === 'Low (Pre-Poll)') rla = Math.min(10, rla + 2); 
+             setGovRampConfig(p => ({...p, currentLoad: load, dynamicRLA: rla.toFixed(1) }));
+          }, 5000);
+          return () => clearInterval(interval);
+        }
+      }, [activeTab, govRampConfig.rlaThreshold]);
+
+      useEffect(() => {
+        // Safe check replacing optional chaining to avoid Babel errors
+        if(JURISDICTIONS[activeAgency]) {
+           const region = activeAgency.split(' - ')[0];
+           const sData = STATE_DATA[region] || STATE_DATA["Georgia"];
+           
+           const newType = (JURISDICTIONS[activeAgency] && JURISDICTIONS[activeAgency][0] && JURISDICTIONS[activeAgency][0].name) ? JURISDICTIONS[activeAgency][0].name : '';
+           const newCounty = (sData && sData.counties && sData.counties[0]) ? sData.counties[0] : '';
+           const newAbbr = (sData && sData.abbr) ? sData.abbr : 'US';
+           const newDistrict = newAbbr + '-01';
+           
+           setIssueForm(prev => ({ 
+             ...prev, 
+             type: newType, 
+             precinctRegion: region,
+             precinctCounty: newCounty,
+             precinctDistrict: newDistrict
+           }));
+        }
+      }, [activeAgency]);
+
+      const filteredDeeds = useMemo(() => deeds.filter(d => d.agency === activeAgency), [deeds, activeAgency]);
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setLoginStep('mfa');
+      };
+
+      const handleMFA = (e) => {
+        e.preventDefault();
+        setLoginStep('authenticating');
+        setTimeout(() => {
+          setIsAuthenticated(true);
+        }, 2000);
+      };
+
+      const handleIssue = (e) => {
+        e.preventDefault();
+        setIsIssuing(true);
+        setTimeout(() => {
+          const categoryArray = JURISDICTIONS[activeAgency];
+          const config = categoryArray ? categoryArray.find(a => a.name === issueForm.type) : null;
+          if (!config) {
+             setIsIssuing(false);
+             showToast("Error finding asset configuration.", "error");
+             return;
+          }
+          const isReg = (issueForm.type || '').includes('Registration');
+          const stateRecord = STATE_DATA[issueForm.precinctRegion];
+          const stateAbbr = (stateRecord && stateRecord.abbr) ? stateRecord.abbr : 'US';
+          
+          const newRecord = {
+            id: `${isReg ? 'REG' : 'BAL'}-${stateAbbr}-${Math.floor(1000 + Math.random() * 9000)}`,
+            type: issueForm.type,
+            agency: activeAgency,
+            owner: isReg ? 'Newly Registered Citizen' : 'Uncast Ballot',
+            wallet: isReg ? `0x${Math.random().toString(16).padEnd(8, '0').substring(2, 8).toUpperCase()}` : `0x${Math.random().toString(16).padEnd(8, '0').substring(2, 8).toUpperCase()}`,
+            status: isReg ? 'Active' : 'Pending Cast',
+            kyc: isReg ? 'Verified Identity' : 'Eligible',
+            date: new Date().toISOString().split('T')[0],
+            isSoulbound: config.soulbound,
+            isShielded: config.isShielded,
+            zkProof: config.isShielded,
+            isEphemeral: config.isEphemeral,
+            expiration: config.isEphemeral ? getFutureDate(1) : undefined,
+            isQuota: config.isQuota,
+            quota: config.isQuota ? '1 Vote' : undefined,
+            precinct: { region: issueForm.precinctRegion, county: issueForm.precinctCounty, district: issueForm.precinctDistrict },
+            history: [{ date: new Date().toISOString().split('T')[0], action: isReg ? 'Registration Mint' : 'Ballot Airdrop', details: isReg ? 'Identity verified via GovRAMP oracle. ZK-SNARK generated.' : `Airdropped to verified local precinct wallet. ${govRampConfig.enforcePQC ? 'Secured via ML-DSA (NIST PQC).' : ''}` }]
+          };
+          
+          setDeeds(prev => [newRecord, ...prev]);
+          setIsIssuing(false);
+          setSelectedDeed(newRecord);
+          showToast(`Successfully issued: ${newRecord.id}`, 'success');
+        }, 1500);
+      };
+
+      const handleCastBallot = (e) => {
+         e.preventDefault();
+         if(!castCandidate || !selectedDeed) return;
+         setCastStep(1); 
+         
+         setTimeout(() => {
+           setCastStep(2); 
+           setTimeout(() => {
+             setDeeds(prev => prev.map(d => d.id === selectedDeed.id ? {
+               ...d,
+               status: 'Sealed (Blind Tally)',
+               kyc: 'Cast via HRL',
+               owner: 'Candidate Smart Contract',
+               wallet: '[HRL MIXED]',
+               originObfuscated: true,
+               envelope: {
+                 destination: `0xPOOL_${castCandidate.replace(/\s+/g, '').toUpperCase()}`,
+                 triggerType: 'Time-Lock (Polls Close)',
+                 triggerValue: `${d.expiration ? d.expiration : getFutureDate(0)}T20:00:00Z`,
+                 status: 'Awaiting Unseal',
+                 bearerKey: `0xDBK_${Math.random().toString(16).substring(2, 10).toUpperCase()}`
+               },
+               history: [
+                 { date: new Date().toISOString().split('T')[0], action: 'Vote Cast & DBK Emitted', details: `Ballot encrypted into programmable envelope. Decoupled Bearer Key issued to voter for E2E-V inclusion. ${govRampConfig.enforceVVSG2 ? 'VVSG 2.0 Software Independence maintained.' : ''}` },
+                 { date: new Date().toISOString().split('T')[0], action: 'Secret Ballot Mixnet', details: `Origin wallet unlinked via Ring Signature. Voter identity shielded. Ephemeral session wallet destructed.` }, 
+                 ...(d.history ? d.history : [])
+               ]
+             } : d));
+             
+             setCastStep(0);
+             setIsCasting(false);
+             setSelectedDeed(null);
+             showToast(`Secret Ballot cast successfully. Obfuscated and encrypted.`, 'success');
+           }, 2000);
+         }, 2000);
+      };
+
+      // Glass Box Voting Booth Logic (SDK Flow)
+      const startGlassBoxVotingBooth = () => {
+        setVotingBoothStep(1);
+        setTimeout(() => setVotingBoothStep(2), 2000); 
+      };
+
+      const captureDocument = () => {
+        setVotingBoothStep(3); 
+      };
+
+      const approveGlassBox = () => {
+        setVotingBoothStep(4); 
+        setTimeout(() => setVotingBoothStep(5), 2500); 
+      };
+
+      const handleTrackerSearch = (e) => {
+        e.preventDefault();
+        setTrackerState('searching');
+        setTimeout(() => {
+          setTrackerState('found');
+        }, 1500);
+      };
+
+      const handleExportSSP = () => {
+        setIsExportingSSP(true);
+        showToast("Compiling System Security Plan (SSP) and NIST Control Matrix...", "info");
+        setTimeout(() => {
+          setIsExportingSSP(false);
+          showToast("SSP Package & ZK-Proofs compiled. Ready for 3PAO Audit Submission.", "success");
+        }, 3000);
+      };
+
+      const activeBallots = filteredDeeds.filter(d => (d && d.type ? d.type : '').includes('Ballot') && (d && d.status) === 'Pending Cast').length;
+      const sealedBallots = filteredDeeds.filter(d => d && d.envelope).length;
+      const activeVoters = filteredDeeds.filter(d => (d && d.type ? d.type : '').includes('Registration')).length;
+
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-topo-pattern flex items-center justify-center p-6 relative overflow-hidden text-slate-800">
+            {/* GovRAMP Branding Header */}
+            <div className="absolute top-0 w-full bg-slate-900 border-b border-slate-800 p-2 text-center text-xs text-slate-400 font-medium">
+              An official website of the United States government. <a href="#" className="underline text-blue-400 hover:text-blue-300">Here's how you know</a>
+            </div>
+
+            <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 mt-10">
+              <div className="p-8 pb-6 border-b border-slate-100 text-center">
+                <div className="mx-auto w-16 h-16 bg-blue-50 text-blue-700 rounded-full flex items-center justify-center shadow-inner mb-4">
+                   <ShieldCheckIcon size={32} />
+                </div>
+                <h1 className="text-2xl font-black tracking-tight text-slate-900">GovRAMP <span className="font-light">SSO Portal</span></h1>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1 mb-3">Bearer Protocol Access</p>
+                <div className="inline-flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Fast-Track Pre-Authorized Node</span>
+                </div>
+              </div>
+
+              <div className="p-8 bg-slate-50">
+                {loginStep === 'initial' && (
+                  <form onSubmit={handleLogin} className="space-y-5 animate-in slide-in-from-right-4">
+                    <p className="text-sm text-slate-600 mb-6 text-center">Sign in with your state-issued credential or PIV/CAC card to access the election infrastructure.</p>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Email Address</label>
+                      <input type="email" required placeholder="official@state.gov" className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm" />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Password</label>
+                      <input type="password" required placeholder="••••••••••••" className="w-full border border-slate-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm" />
+                    </div>
+
+                    <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center cursor-pointer">
+                      Sign In <ArrowRightIcon size={16} className="ml-2" />
+                    </button>
+                    
+                    <div className="relative flex py-2 items-center">
+                      <div className="flex-grow border-t border-slate-300"></div>
+                      <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase">Or use Hardware</span>
+                      <div className="flex-grow border-t border-slate-300"></div>
+                    </div>
+                    
+                    <button type="button" onClick={() => setLoginStep('mfa')} className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center cursor-pointer">
+                      <LockIcon size={16} className="mr-2 text-slate-500" /> Insert PIV / CAC Smartcard
+                    </button>
+                  </form>
+                )}
+
+                {loginStep === 'mfa' && (
+                  <form onSubmit={handleMFA} className="space-y-5 animate-in slide-in-from-right-4">
+                    <div className="text-center mb-6">
+                      <FingerprintIcon size={40} className="mx-auto text-blue-600 mb-3" />
+                      <h3 className="text-lg font-bold text-slate-800">Two-Factor Authentication</h3>
+                      <p className="text-xs text-slate-500 mt-1">NIST 800-63 AAL3 Requirement</p>
+                    </div>
+
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg mb-4 text-sm text-blue-800 text-center">
+                      A security code has been sent to your registered federal device.
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">One-Time Passcode</label>
+                      <input type="text" required placeholder="000-000" className="w-full border border-slate-300 rounded-lg p-3 text-center text-lg tracking-widest font-mono outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm" />
+                    </div>
+
+                    <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors cursor-pointer">
+                      Verify & Authenticate
+                    </button>
+                    <button type="button" onClick={() => setLoginStep('initial')} className="w-full text-slate-500 hover:text-slate-700 text-xs font-bold py-2 cursor-pointer">
+                      Cancel
+                    </button>
+                  </form>
+                )}
+
+                {loginStep === 'authenticating' && (
+                  <div className="py-12 text-center animate-in fade-in">
+                    <RefreshCcwIcon size={40} className="mx-auto text-blue-600 animate-spin mb-4" />
+                    <h3 className="text-lg font-bold text-slate-800">Establishing Secure Session</h3>
+                    <p className="text-xs text-slate-500 mt-2 font-mono">Validating FIPS 140-3 cryptography...<br/>Checking GovRAMP Authorization Boundary...</p>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 bg-slate-900 text-center border-t border-slate-800">
+                <p className="text-[9px] text-slate-400">WARNING: This is a U.S. Government Computer System.<br/>Unauthorized access is prohibited and subject to prosecution under Title 18, U.S. Code.</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex h-screen overflow-hidden text-slate-800">
+          
+          {toast && (
+            <div className="fixed top-6 right-6 px-5 py-3 bg-slate-900 text-white rounded-xl shadow-xl text-sm font-bold z-[200] flex items-center space-x-2 animate-in slide-in-from-top-4">
+              <CheckCircleIcon size={18} className="text-emerald-400" />
+              <span>{toast.msg}</span>
+            </div>
+          )}
+
+          {/* Sidebar */}
+          <aside className="w-64 bg-[#0f172a] text-slate-200 flex flex-col z-50 shadow-2xl shrink-0">
+            <div className="p-6 border-b border-slate-800 flex items-center space-x-3 bg-slate-900">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg"><VoteIcon size={20} className="text-white"/></div>
+              <div>
+                <h1 className="text-lg font-black tracking-widest text-white leading-none">BEARER</h1>
+                <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-1">GovRAMP Elections</p>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="mb-6 px-4">
+                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 block">State Jurisdiction</label>
+                <div className="relative">
+                  <LandmarkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select 
+                    value={activeAgency} onChange={(e) => setActiveAgency(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg pl-9 p-2.5 outline-none cursor-pointer truncate appearance-none"
+                  >
+                    {Object.keys(JURISDICTIONS).map(j => <option key={j} value={j}>{j}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
+                <button
+                  key={id} onClick={() => setActiveTab(id)}
+                  className={`w-full flex items-center px-4 py-3 rounded-lg transition-all text-sm font-semibold cursor-pointer ${
+                    activeTab === id ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <Icon size={18} className="mr-3" /> {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-6 border-t border-slate-800 text-[10px] text-slate-500 bg-slate-900 space-y-2">
+              <p className="flex items-center text-blue-400 font-bold uppercase tracking-widest"><ShieldCheckIcon size={12} className="mr-1"/> GovRAMP High SSO</p>
+              {govRampConfig.enforcePQC && <p className="flex items-center text-emerald-400 font-bold uppercase tracking-widest"><LockIcon size={12} className="mr-1"/> ML-DSA / ML-KEM Active</p>}
+              <button onClick={() => setIsAuthenticated(false)} className="mt-4 w-full flex items-center justify-center text-rose-400 hover:text-rose-300 border border-rose-900/50 hover:bg-rose-900/20 py-2 rounded transition-colors cursor-pointer">
+                 <LogInIcon size={12} className="mr-2 transform rotate-180" /> Secure Sign Out
+              </button>
+            </div>
+          </aside>
+
+          {/* Main Area */}
+          <div className="flex-1 flex flex-col bg-slate-50 relative overflow-hidden">
+            <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between z-10 shrink-0">
+              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{NAV_ITEMS.find(i => i.id === activeTab)?.label}</h2>
+              <div className="flex items-center space-x-4">
+                 <div className="text-right">
+                   <p className="text-xs font-bold text-slate-800">{activeAgency.split(' - ')[0]} Operator</p>
+                   <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Hardware Attested</p>
+                 </div>
+                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 border border-blue-200">
+                   <UserCheckIcon size={20} />
+                 </div>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-8 relative custom-scrollbar">
+              
+              {/* DASHBOARD */}
+              {activeTab === 'dashboard' && (
+                <div className="max-w-6xl mx-auto animate-in fade-in">
+                  
+                  {/* FASTRACK BANNER */}
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex items-center space-x-3 shadow-sm">
+                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
+                     <p className="text-sm font-bold text-emerald-800 uppercase tracking-widest">Fast-Track PMO Status: Pre-Authorized Inheritance Active (GovRAMP High)</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                      <div className="p-4 bg-blue-50 text-blue-600 rounded-xl"><UserCheckIcon size={28}/></div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Registered Voters</p>
+                        <p className="text-3xl font-black text-slate-900 mt-1">{activeVoters + 24102}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                      <div className="p-4 bg-amber-50 text-amber-600 rounded-xl"><VoteIcon size={28}/></div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Active Uncast Ballots</p>
+                        <p className="text-3xl font-black text-slate-900 mt-1">{activeBallots + 841}</p>
+                      </div>
+                    </div>
+                    <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-200 shadow-sm flex items-center space-x-4">
+                      <div className="p-4 bg-indigo-100 text-indigo-700 rounded-xl"><EnvelopeIcon size={28}/></div>
+                      <div>
+                        <p className="text-sm font-bold text-indigo-800 uppercase tracking-widest">Blind Tally (Sealed)</p>
+                        <p className="text-3xl font-black text-indigo-900 mt-1">{sealedBallots + 15200}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg p-6 mb-6 text-white flex flex-col md:flex-row items-center justify-between">
+                     <div>
+                       <h3 className="text-lg font-bold mb-1 flex items-center">
+                         <ActivityIcon size={20} className="mr-2 text-emerald-400" />
+                         AI-Optimized Risk-Limiting Audit (RLA) Active
+                       </h3>
+                       <p className="text-sm text-slate-400 max-w-2xl mb-2">
+                         Statistical sampling of Decoupled Bearer Keys (DBKs) against the Hybrid Ring Ledger to ensure the digital tally accurately reflects cast ballots. ML Telemetry scales compute threshold based on network load and race margins.
+                       </p>
+                       <div className="flex items-center space-x-4 bg-slate-800 p-2 rounded-lg border border-slate-700 inline-flex">
+                           <span className="text-xs font-mono font-bold text-slate-300">Load: {govRampConfig.currentLoad}</span>
+                           <span className="text-xs font-mono font-bold text-slate-500">|</span>
+                           <span className="text-xs font-mono font-bold text-emerald-400">Dynamic RLA Limit: {govRampConfig.dynamicRLA}%</span>
+                        </div>
+                     </div>
+                     <div className="mt-4 md:mt-0 bg-slate-800 px-6 py-3 rounded-xl border border-slate-700 text-center shrink-0">
+                       <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</span>
+                       <span className="text-lg font-black text-emerald-400 flex items-center justify-center"><CheckCircleIcon size={18} className="mr-2"/> Within Threshold</span>
+                     </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                       <h3 className="font-bold text-lg text-slate-800">Election Security Matrix</h3>
+                       <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">System Optimal</span>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                          <h4 className="font-bold text-sm text-slate-800 mb-1 flex items-center"><ShieldIcon size={16} className="mr-2 text-rose-500"/> F-SRM Seizure Matrix Disabled</h4>
+                          <p className="text-xs text-slate-600">The federal/state override matrix is hard-forked off for all ballot assets. Votes cannot be intercepted or reassigned by any government entity.</p>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                          <h4 className="font-bold text-sm text-slate-800 mb-1 flex items-center"><EyeIcon size={16} className="mr-2 text-blue-500"/> ZK-FIP Voter Rolls</h4>
+                          <p className="text-xs text-slate-600">Voter eligibility is proven mathematically via Zero-Knowledge succinct proofs. No PII (SSN/Name) is exposed on the public audit ledger.</p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                          <h4 className="font-bold text-sm text-slate-800 mb-1 flex items-center"><FingerprintIcon size={16} className="mr-2 text-amber-500"/> Hardware Attestation (Anti-Coercion)</h4>
+                          <p className="text-xs text-slate-600">Ballots can only be signed and cast from audited physical polling terminal MAC addresses, preserving the secret physical voting booth.</p>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                          <h4 className="font-bold text-sm text-slate-800 mb-1 flex items-center"><EyeOffIcon size={16} className="mr-2 text-purple-500"/> Secret Ballot (Mixnet)</h4>
+                          <p className="text-xs text-slate-600">Cast votes are anonymized via Hybrid Ring Ledger. The origin identity is mathematically severed from the cast ballot payload.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* REGISTRY / ROLLS */}
+              {activeTab === 'registry' && (
+                <div className="max-w-7xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
+                  <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                     <h3 className="font-bold text-slate-800">State Ledger: Records & Ballots</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600">
+                      <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                        <tr>
+                          <th className="px-6 py-4 uppercase tracking-wider text-[10px] font-black">ID</th>
+                          <th className="px-6 py-4 uppercase tracking-wider text-[10px] font-black">Asset Type</th>
+                          <th className="px-6 py-4 uppercase tracking-wider text-[10px] font-black">Precinct</th>
+                          <th className="px-6 py-4 uppercase tracking-wider text-[10px] font-black">Status</th>
+                          <th className="px-6 py-4 text-right uppercase tracking-wider text-[10px] font-black">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredDeeds.map((deed) => (
+                          <tr key={deed.id} onClick={() => { setSelectedDeed(deed); setIsDocumentFlipped(false); setIsCasting(false); }} className="hover:bg-blue-50/50 cursor-pointer">
+                            <td className="px-6 py-4 font-mono font-bold text-slate-900">
+                              {deed.id}
+                              {deed.envelope && <span className="ml-2 px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] uppercase tracking-wider">Sealed</span>}
+                              {deed.originObfuscated && <span className="ml-2 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[9px] uppercase tracking-wider">Secret</span>}
+                              {(deed.type || '').includes('Synthetic') && <span className="ml-2 px-1.5 py-0.5 bg-purple-900 text-white rounded text-[9px] uppercase tracking-wider animate-pulse">SIP</span>}
+                            </td>
+                            <td className="px-6 py-4 font-medium text-slate-700">{deed.type}</td>
+                            <td className="px-6 py-4 text-xs font-bold text-slate-500">{(deed.precinct && deed.precinct.district) ? deed.precinct.district : 'N/A'}</td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                                (deed?.status || '').includes('Sealed') ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                deed.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                (deed?.status || '').includes('Burned') ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}>
+                                {deed.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button className="px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg font-bold flex items-center ml-auto border border-blue-100 cursor-pointer transition-colors">
+                                <EyeIcon size={14} className="mr-1.5" /> Inspect
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ISSUE FORM */}
+              {activeTab === 'issue' && (
+                <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
+                  <div className="p-6 border-b border-slate-200 bg-slate-50">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center"><FileTextIcon size={20} className="mr-2 text-blue-600" /> Issue Democratic Asset</h2>
+                  </div>
+                  <div className="p-8">
+                    {!isIssuing ? (
+                      <form onSubmit={handleIssue} className="space-y-6">
+                        <div className="space-y-4">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Asset Class</label>
+                          <select required value={issueForm.type} onChange={e => setIssueForm({...issueForm, type: e.target.value})} className="w-full border border-slate-300 rounded-xl p-3 bg-white font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+                            {(JURISDICTIONS[activeAgency] || []).map(a => {
+                               if (a.name.includes('Synthetic') && !govRampConfig.allowSyntheticCandidates) return null;
+                               return <option key={a.name} value={a.name}>{a.name}</option>;
+                            })}
+                          </select>
+                        </div>
+                        
+                        <div className="p-5 bg-blue-50/50 border border-blue-100 rounded-xl space-y-4">
+                          <h4 className="text-sm font-bold text-blue-900 flex items-center"><MapPinIcon size={16} className="mr-2"/> Precinct Binding (Geospatial)</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">County</label>
+                              <select required value={issueForm.precinctCounty} onChange={e => setIssueForm({...issueForm, precinctCounty: e.target.value})} className="w-full border border-blue-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white cursor-pointer">
+                                {(STATE_DATA[issueForm.precinctRegion]?.counties || []).map(c => <option key={c} value={c}>{c}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Congressional/Voting District</label>
+                              <select required value={issueForm.precinctDistrict} onChange={e => setIssueForm({...issueForm, precinctDistrict: e.target.value})} className="w-full border border-blue-200 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono bg-white cursor-pointer">
+                                {Array.from({length: STATE_DATA[issueForm.precinctRegion]?.districts || 1}, (_, i) => {
+                                  const d = `${STATE_DATA[issueForm.precinctRegion]?.abbr}-${String(i + 1).padStart(2, '0')}`;
+                                  return <option key={d} value={d}>{d}</option>;
+                                })}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-900 p-5 rounded-xl flex items-start space-x-3 text-white shadow-lg border border-slate-700">
+                          <ShieldIcon size={24} className="text-emerald-400 mt-1" />
+                          <div className="space-y-2">
+                            <p className="text-sm font-bold border-b border-slate-700 pb-2">Protocol Constraints Enforced</p>
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                              {(issueForm.type || '').includes('Registration') ? 
+                                'This registration will be SOULBOUND and cannot be transferred. Identity will be shielded via ZK-FIP on the public ledger.' : 
+                                'This ballot is EPHEMERAL. A strict quota of 1 is enforced. It will auto-burn at 20:00:00 local time if not cast into a smart contract.'}
+                            </p>
+                            {govRampConfig.enforcePQC && (
+                              <p className="text-[10px] text-emerald-400 font-mono flex items-center">
+                                <CheckCircleIcon size={12} className="mr-1" /> NIST PQC Standards (ML-DSA) active for signature generation.
+                              </p>
+                            )}
+                            {govRampConfig.enforceVVSG2 && (issueForm.type || '').includes('Ballot') && (
+                              <p className="text-[10px] text-blue-400 font-mono flex items-center">
+                                <CheckCircleIcon size={12} className="mr-1" /> EAC VVSG 2.0 Software Independence requirement active.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-4 text-right">
+                          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all cursor-pointer">
+                            Compile Script & Issue
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="py-16 text-center">
+                        <RefreshCcwIcon size={48} className="mx-auto text-blue-500 animate-spin mb-6" />
+                        <h3 className="text-2xl font-bold text-slate-800">Generating State Transitions...</h3>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* REMOTE GLASS BOX VOTING BOOTH (WITH ID SCANNER) */}
+              {activeTab === 'remote_voting_booth' && (
+                <div className="max-w-5xl mx-auto animate-in fade-in">
+                  <div className="mb-8 text-center">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Remote "Glass Box" Voting Booth</h2>
+                    <p className="text-slate-500 max-w-2xl mx-auto text-sm">Strictly resolving mail-in/UOCAVA fraud via NIST IAL2 Video Sessions and Biometric ID matching, securely air-gapped from the ballot casting ledger via Zero-Knowledge Proofs to preserve the Secret Ballot.</p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden max-w-4xl mx-auto flex flex-col md:flex-row h-[550px]">
+                     {/* Status Sidebar */}
+                     <div className="w-full md:w-64 bg-slate-900 text-slate-300 p-6 flex flex-col border-r border-slate-800 shrink-0">
+                       <h3 className="font-bold text-white mb-6 uppercase tracking-widest text-xs flex items-center"><ShieldCheckIcon size={16} className="mr-2 text-blue-400"/> Session State</h3>
+                       
+                       <div className="space-y-6 flex-1">
+                         <div className={`flex items-start space-x-3 transition-opacity ${votingBoothStep >= 0 ? 'opacity-100' : 'opacity-30'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 ${votingBoothStep > 2 ? 'bg-emerald-500 border-emerald-500 text-white' : votingBoothStep === 2 ? 'border-blue-500 text-blue-400 animate-pulse' : 'border-slate-600 text-slate-600'}`}><span className="text-[10px] font-bold">1</span></div>
+                           <div><p className="text-xs font-bold text-white">Document Capture</p><p className="text-[9px]">State ID / mDL Scan</p></div>
+                         </div>
+                         <div className={`flex items-start space-x-3 transition-opacity ${votingBoothStep >= 3 ? 'opacity-100' : 'opacity-30'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 ${votingBoothStep > 3 ? 'bg-emerald-500 border-emerald-500 text-white' : votingBoothStep === 3 ? 'border-blue-500 text-blue-400' : 'border-slate-600 text-slate-600'}`}><span className="text-[10px] font-bold">2</span></div>
+                           <div><p className="text-xs font-bold text-white">IAL2 Biometrics</p><p className="text-[9px]">Facial Match & Liveness</p></div>
+                         </div>
+                         <div className={`flex items-start space-x-3 transition-opacity ${votingBoothStep >= 4 ? 'opacity-100' : 'opacity-30'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 ${votingBoothStep > 4 ? 'bg-emerald-500 border-emerald-500 text-white' : votingBoothStep === 4 ? 'border-purple-500 text-purple-400 animate-pulse' : 'border-slate-600 text-slate-600'}`}><span className="text-[10px] font-bold">3</span></div>
+                           <div><p className="text-xs font-bold text-white">Cryptographic Air-Gap</p><p className="text-[9px]">Disconnecting PII metadata</p></div>
+                         </div>
+                         <div className={`flex items-start space-x-3 transition-opacity ${votingBoothStep >= 5 ? 'opacity-100' : 'opacity-30'}`}>
+                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 ${votingBoothStep === 5 ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-600 text-slate-600'}`}><span className="text-[10px] font-bold">4</span></div>
+                           <div><p className="text-xs font-bold text-white">ZK-FIP Minted</p><p className="text-[9px]">Anonymized ballot access</p></div>
+                         </div>
+                       </div>
+
+                       {votingBoothStep === 3 && (
+                         <button onClick={approveGlassBox} className="mt-auto w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg text-sm transition-colors shadow-lg cursor-pointer flex items-center justify-center">
+                           <CheckCircleIcon size={16} className="mr-2"/> Approve IAL2 Match
+                         </button>
+                       )}
+                     </div>
+
+                     {/* Main Interactive Area */}
+                     <div className="flex-1 bg-slate-100 relative flex items-center justify-center p-6 overflow-hidden">
+                        
+                        {votingBoothStep === 0 && (
+                          <div className="text-center">
+                            <VideoIcon size={48} className="mx-auto text-slate-400 mb-4" />
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">UOCAVA Elector Queued</h3>
+                            <p className="text-sm text-slate-500 mb-6">A remote voter is waiting to establish identity and perform a coercion-free environment sweep.</p>
+                            <button onClick={startGlassBoxVotingBooth} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow cursor-pointer hover:bg-blue-700 transition-colors">Initiate Glass Box Session</button>
+                          </div>
+                        )}
+
+                        {votingBoothStep === 1 && (
+                          <div className="text-center">
+                            <RefreshCcwIcon size={40} className="mx-auto text-blue-500 animate-spin mb-4" />
+                            <p className="font-bold text-slate-800">Establishing P2P Encrypted Feed...</p>
+                          </div>
+                        )}
+
+                        {votingBoothStep === 2 && (
+                          <div className="w-full h-full bg-slate-900 rounded-xl relative overflow-hidden shadow-inner border border-slate-700 flex items-center justify-center">
+                             <div className="scanline"></div>
+                             <div className="absolute inset-0 bg-black/40 z-10"></div>
+                             <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800&h=600" className="absolute w-full h-full object-cover opacity-50 mix-blend-luminosity blur-sm" alt="Background Feed" />
+                             
+                             {/* ID Scan Overlay */}
+                             <div className="relative z-20 w-80 h-48 border-2 border-blue-400 rounded-xl bg-white/10 backdrop-blur-md flex flex-col items-center justify-center shadow-[0_0_15px_rgba(96,165,250,0.5)]">
+                                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-500 rounded-tl-lg"></div>
+                                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-500 rounded-tr-lg"></div>
+                                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-500 rounded-bl-lg"></div>
+                                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-500 rounded-br-lg"></div>
+                                
+                                <FileTextIcon size={40} className="text-white mb-2 opacity-80" />
+                                <p className="text-white font-bold text-sm uppercase tracking-widest">Position State ID</p>
+                                <p className="text-blue-200 text-[10px] mt-1">Align front of Driver's License</p>
+                             </div>
+
+                             <div className="absolute bottom-6 z-20">
+                               <button onClick={captureDocument} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg shadow-xl transition-colors cursor-pointer">Capture Document</button>
+                             </div>
+                          </div>
+                        )}
+
+                        {votingBoothStep === 3 && (
+                          <div className="w-full h-full bg-slate-900 rounded-xl relative overflow-hidden shadow-inner border border-slate-700">
+                             <div className="scanline"></div>
+                             <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800&h=600" className="w-full h-full object-cover opacity-60 mix-blend-luminosity" alt="Video Feed" />
+                             
+                             {/* Facial tracking box */}
+                             <div className="absolute top-1/4 left-1/3 w-40 h-48 border border-emerald-400/50 rounded-lg bg-emerald-400/10 flex items-end justify-center pb-2">
+                               <span className="bg-emerald-500/80 text-white text-[9px] font-bold px-2 py-0.5 rounded backdrop-blur">Liveness Verified 99.8%</span>
+                             </div>
+
+                             <div className="absolute top-4 left-4 flex space-x-2">
+                               <span className="bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider flex items-center animate-pulse"><div className="w-2 h-2 bg-white rounded-full mr-1.5"></div>REC</span>
+                               <span className="bg-slate-800/80 backdrop-blur text-white px-2 py-1 rounded text-[10px] font-mono border border-slate-700">AAL3 Active</span>
+                             </div>
+
+                             {/* ID Match UI */}
+                             <div className="absolute bottom-4 right-4 w-52 bg-slate-900/90 backdrop-blur-md border border-slate-700 rounded-lg overflow-hidden flex flex-col p-3 shadow-2xl">
+                               <div className="flex items-center space-x-3 mb-2 pb-2 border-b border-slate-700">
+                                  <div className="w-10 h-10 bg-slate-800 rounded border border-slate-600 flex items-center justify-center shrink-0">
+                                    <UserCheckIcon size={20} className="text-emerald-400" />
+                                  </div>
+                                  <div className="overflow-hidden">
+                                    <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-0.5">ID Source</p>
+                                    <p className="text-xs text-white font-bold truncate">State Driver's License</p>
+                                  </div>
+                               </div>
+                               <p className="text-[10px] flex justify-between"><span className="text-slate-400">Facial Match:</span> <span className="text-emerald-400 font-bold">TRUE (98.2%)</span></p>
+                               <p className="text-[10px] flex justify-between"><span className="text-slate-400">DMV DB:</span> <span className="text-emerald-400 font-bold">VERIFIED</span></p>
+                             </div>
+
+                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900 to-transparent h-24 pointer-events-none"></div>
+                          </div>
+                        )}
+
+                        {votingBoothStep === 4 && (
+                          <div className="text-center animate-in zoom-in">
+                            <ShieldIcon size={64} className="mx-auto text-purple-500 mb-4 animate-pulse" />
+                            <h3 className="text-2xl font-black text-slate-800 mb-2">Executing Cryptographic Air-Gap</h3>
+                            <p className="text-sm text-slate-600 max-w-sm mx-auto font-mono bg-white p-4 rounded-xl border border-slate-200 shadow-inner leading-relaxed">
+                              Terminating video feed...<br/>Purging PII metadata from RAM...<br/>Generating Zero-Knowledge Identity Proof (ZK-FIP)...
+                            </p>
+                          </div>
+                        )}
+
+                        {votingBoothStep === 5 && (
+                          <div className="text-center animate-in zoom-in p-8 bg-white rounded-2xl shadow-xl border border-emerald-200">
+                            <CheckCircleIcon size={64} className="mx-auto text-emerald-500 mb-4" />
+                            <h3 className="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">ZK-FIP Minted Successfully</h3>
+                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">The voter's identity is verified and completely decoupled from their video session. They may now securely cast an anonymous ballot.</p>
+                            <button onClick={() => setVotingBoothStep(0)} className="px-6 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-xl transition-colors cursor-pointer border border-emerald-200">
+                              Session Complete - Close Module
+                            </button>
+                          </div>
+                        )}
+
+                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ENVELOPES (BLIND TALLY) */}
+              {activeTab === 'envelopes' && (
+                <div className="max-w-5xl mx-auto animate-in fade-in">
+                  <div className="mb-6 bg-slate-900 rounded-xl p-8 shadow-xl text-white flex items-center space-x-6">
+                    <EnvelopeIcon size={48} className="text-indigo-400 opacity-80" />
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">Blind Tally Envelopes</h2>
+                      <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                        To prevent early media calls and manipulation of late-day turnout, all cast ballots are wrapped in Programmable Envelopes. These envelopes act as decentralized mempools that are mathematically impossible to tally until the temporal lock (Polls Close) releases them to the candidate smart contracts.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {filteredDeeds.filter(d => d?.envelope).map(deed => (
+                      <div key={deed.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center space-x-4">
+                          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100"><LockIcon size={20} /></div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 font-mono text-sm">{deed.id}</h4>
+                            <p className="text-xs text-slate-500 mt-0.5">Payload completely obfuscated.</p>
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 px-4 py-2 border border-slate-200 rounded-lg text-xs flex space-x-6">
+                          <div>
+                            <span className="block font-bold text-slate-500 uppercase tracking-widest mb-1">Time-Lock Trigger</span>
+                            <span className="font-mono text-indigo-700 font-bold">{deed.envelope.triggerValue}</span>
+                          </div>
+                          <div>
+                            <span className="block font-bold text-slate-500 uppercase tracking-widest mb-1">Target Contract</span>
+                            <span className="font-mono text-slate-700">{deed.envelope.destination}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="px-3 py-1 bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider rounded-full inline-flex items-center">
+                            <RefreshCcwIcon size={10} className="animate-spin mr-1.5"/> Awaiting Temporal Trigger
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* DBK TRACKER (Public E2E-V Interface) */}
+              {activeTab === 'dbk_tracker' && (
+                <div className="max-w-4xl mx-auto animate-in fade-in py-10">
+                  <div className="text-center mb-10">
+                    <div className="w-16 h-16 bg-blue-100 text-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-blue-200">
+                      <PackageIcon size={32} />
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Public DBK Package Tracker</h2>
+                    <p className="text-slate-500 text-sm max-w-lg mx-auto leading-relaxed">
+                      Enter your Decoupled Bearer Key (DBK) to mathematically verify your ballot's inclusion in the final tally, satisfying the Supreme Court's End-to-End Verifiability (E2E-V) mandate without revealing your vote.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleTrackerSearch} className="max-w-2xl mx-auto relative mb-12">
+                    <SearchIcon size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="Enter DBK (e.g., 0xDBK_8F2A91BC...)" 
+                      value={dbkSearch}
+                      onChange={e => setDbkSearch(e.target.value.toUpperCase())}
+                      className="w-full bg-white border-2 border-slate-200 rounded-2xl py-4 pl-12 pr-32 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 text-lg font-mono shadow-lg transition-all"
+                    />
+                    <button type="submit" className="absolute right-2 top-2 bottom-2 bg-slate-900 text-white font-bold px-6 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer">
+                      Track Vote
+                    </button>
+                  </form>
+
+                  {trackerState === 'searching' && (
+                    <div className="text-center py-10">
+                      <RefreshCcwIcon size={40} className="mx-auto text-blue-500 animate-spin mb-4" />
+                      <p className="font-bold text-slate-600 font-mono text-sm">Querying Hybrid Ring Ledger...</p>
+                    </div>
+                  )}
+
+                  {trackerState === 'found' && (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4">
+                      <div className="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-center">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Decoupled Bearer Key</p>
+                          <p className="font-mono font-bold text-slate-900">{dbkSearch || '0xDBK_DEMO_HASH_STRING'}</p>
+                        </div>
+                        <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider border border-emerald-200">
+                          Verified & Included
+                        </span>
+                      </div>
+                      
+                      <div className="p-8">
+                        <div className="relative">
+                          {/* Track Line */}
+                          <div className="absolute left-[27px] top-4 bottom-4 w-1 bg-slate-100 rounded"></div>
+                          <div className="absolute left-[27px] top-4 h-[75%] w-1 bg-emerald-500 rounded"></div>
+
+                          <div className="space-y-8 relative">
+                            {/* Step 1 */}
+                            <div className="flex items-start">
+                              <div className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg border-4 border-white z-10"><VoteIcon size={24}/></div>
+                              <div className="ml-6 pt-2">
+                                <h4 className="font-bold text-slate-900 text-lg">Ballot Cast (Hardware Terminal)</h4>
+                                <p className="text-sm text-slate-500 mt-1">Vote was successfully cast from an authorized polling location.</p>
+                                <p className="text-xs text-slate-400 font-mono mt-1">Timestamp: {getPastDate(0)} 14:22:01 LOC</p>
+                              </div>
+                            </div>
+                            
+                            {/* Step 2 */}
+                            <div className="flex items-start">
+                              <div className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg border-4 border-white z-10"><RefreshCcwIcon size={24}/></div>
+                              <div className="ml-6 pt-2">
+                                <h4 className="font-bold text-slate-900 text-lg">Origin Obfuscated (Mixnet)</h4>
+                                <p className="text-sm text-slate-500 mt-1">Voter identity was mathematically decoupled from the payload.</p>
+                              </div>
+                            </div>
+
+                            {/* Step 3 */}
+                            <div className="flex items-start">
+                              <div className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg border-4 border-white z-10"><EnvelopeIcon size={24}/></div>
+                              <div className="ml-6 pt-2">
+                                <h4 className="font-bold text-slate-900 text-lg">Sealed in Programmable Envelope</h4>
+                                <p className="text-sm text-slate-500 mt-1">Ballot is cryptographically locked awaiting temporal trigger.</p>
+                                <div className="bg-slate-50 border border-slate-200 p-2 rounded text-xs font-mono text-slate-600 inline-block mt-2">Sharded: District Mempool</div>
+                              </div>
+                            </div>
+
+                            {/* Step 4 (Pending) */}
+                            <div className="flex items-start opacity-50">
+                              <div className="w-14 h-14 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center shrink-0 border-4 border-white z-10"><DatabaseIcon size={24}/></div>
+                              <div className="ml-6 pt-2">
+                                <h4 className="font-bold text-slate-900 text-lg">Tabulated (Awaiting Polls Close)</h4>
+                                <p className="text-sm text-slate-500 mt-1">Envelope will unseal and vote will be mathematically added to tally.</p>
+                                <p className="text-xs text-slate-400 font-mono mt-1">Trigger: 2026-11-03T20:00:00Z</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* ATTESTATION */}
+              {activeTab === 'attestation' && (
+                <div className="max-w-5xl mx-auto animate-in fade-in space-y-6">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-8 shadow-sm">
+                    <h2 className="text-xl font-bold text-amber-900 mb-2 flex items-center"><FingerprintIcon size={24} className="mr-3" /> Hardware Attestation (Anti-Coercion)</h2>
+                    <p className="text-sm text-amber-800 leading-relaxed">
+                      If citizens can vote from mobile devices, bad actors can physically coerce them or buy votes while watching the screen. The BEARER Protocol mitigates this by requiring that the cryptographic signature casting the ballot originates from an audited, state-issued polling terminal MAC address within the voter's specific geographic precinct.
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 flex items-center justify-center min-h-[200px]">
+                    <div className="text-center text-slate-500">
+                      <ServerIcon size={48} className="mx-auto mb-4 opacity-50" />
+                      <p className="font-bold text-lg">Polling Terminal Network Online</p>
+                      <p className="text-sm">Monitoring incoming cryptographic handshakes from authorized precincts.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* GOVRAMP COMPLIANCE & SECRET BALLOT */}
+              {activeTab === 'govramp' && (
+                <div className="max-w-5xl mx-auto animate-in fade-in space-y-6">
+                  <div className="bg-slate-900 rounded-2xl p-8 shadow-xl text-white">
+                    <div className="flex items-center mb-4">
+                      <ScaleIcon size={32} className="text-amber-400 mr-4" />
+                      <h2 className="text-2xl font-bold">GovRAMP Security & SCOTUS Compliance</h2>
+                    </div>
+                    <p className="text-slate-300 text-sm leading-relaxed max-w-3xl">
+                      Democracy requires two conflicting mandates: Absolute Determinism (proving the vote count) and Absolute Secrecy (proving no one knows who voted for whom). The BEARER Protocol resolves this via the Hybrid Ring Ledger (HRL) and Zero-Knowledge Identity Proofs, actively monitored and verified under GovRAMP standards.
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 rounded-xl border border-blue-200 shadow-sm p-6 flex flex-col md:flex-row md:items-start justify-between gap-6">
+                    <div className="flex-1">
+                       <div className="inline-flex items-center space-x-2 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 border border-emerald-200">
+                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                         <span>Fast-Track PMO Status: Pre-Authorized Inheritance Active</span>
+                       </div>
+                       <h3 className="font-bold text-blue-900 flex items-center mb-3 text-lg"><ShieldCheckIcon size={20} className="mr-2"/> 3PAO Audit & GovRAMP Readiness (Verified)</h3>
+                       
+                       <div className="space-y-3 mt-4">
+                         <div className="bg-white p-3 rounded border border-blue-100 flex items-start space-x-3">
+                           <CheckCircleIcon size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+                           <div>
+                             <p className="text-xs font-bold text-slate-800">FIPS 140-3 Cryptography Validated</p>
+                             <p className="text-[10px] text-slate-500">All encryption, key generation (DBK), and ZK-TR hashing are restricted to FIPS 140-3 validated HSMs, deprecating legacy FIPS 140-2 reliance prior to the 2026 mandate.</p>
+                           </div>
+                         </div>
+                         <div className="bg-white p-3 rounded border border-blue-100 flex items-start space-x-3">
+                           <CheckCircleIcon size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+                           <div>
+                             <p className="text-xs font-bold text-slate-800">Continuous Monitoring (ConMon) Configured</p>
+                             <p className="text-[10px] text-slate-500">Automated POA&M tracking, monthly vulnerability scanning integration, and continuous RLA sampling are active to meet GovRAMP Authorized maintenance requirements.</p>
+                           </div>
+                         </div>
+                         <div className="bg-white p-3 rounded border border-blue-100 flex items-start space-x-3">
+                           <CheckCircleIcon size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+                           <div>
+                             <p className="text-xs font-bold text-slate-800">GovRAMP Fast-Track Documentation Mapped</p>
+                             <p className="text-[10px] text-slate-500">Leveraging Google Cloud Assured Workloads, the platform inherits JAB provisional authorizations. Federal RAR/SAR documentation is ready for PMO Fast-Track reuse.</p>
+                           </div>
+                         </div>
+                       </div>
+                    </div>
+                    <div className="shrink-0 flex flex-col space-y-3 w-full md:w-auto">
+                      <button 
+                        onClick={handleExportSSP} 
+                        disabled={isExportingSSP}
+                        className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm uppercase tracking-widest rounded-xl shadow-md transition-all flex items-center justify-center disabled:opacity-50 cursor-pointer"
+                      >
+                        {isExportingSSP ? <RefreshCcwIcon size={18} className="animate-spin mr-2"/> : <FileTextIcon size={18} className="mr-2"/>}
+                        {isExportingSSP ? 'Packaging SSP...' : 'Export SSP Package'}
+                      </button>
+                      <p className="text-[9px] text-center text-blue-700 uppercase tracking-widest font-bold">Generates OSCAL Control Matrix</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                       <h3 className="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center">
+                         <EyeOffIcon size={18} className="mr-2 text-purple-600"/> Secret Ballot (Mixnet) Active
+                       </h3>
+                       <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+                         When a ballot is cast, it does not travel directly from the Voter Registration Wallet to the Candidate Smart Contract. Instead, it enters a decentralized Mixnet (Ring Signature). The output ballot payload is mathematically proven to be legitimate and unspent, but the origin address is completely scrubbed.
+                       </p>
+                       <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 flex items-center justify-center space-x-4">
+                         <div className="text-center"><UserCheckIcon size={24} className="mx-auto text-blue-500 mb-1"/><span className="text-[10px] font-bold">Registered Wallet</span></div>
+                         <div className="text-purple-400">→</div>
+                         <div className="bg-purple-600 text-white p-2 rounded-full shadow-md"><RefreshCcwIcon size={20} className="animate-spin-slow"/></div>
+                         <div className="text-purple-400">→</div>
+                         <div className="text-center"><VoteIcon size={24} className="mx-auto text-emerald-500 mb-1"/><span className="text-[10px] font-bold">Anonymized Ballot</span></div>
+                       </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                       <h3 className="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center">
+                         <DatabaseIcon size={18} className="mr-2 text-slate-500"/> Data Boundary Demarcation
+                       </h3>
+                       <div className="space-y-4">
+                         <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                           <p className="text-[10px] uppercase font-bold text-red-600 mb-1">Mutable (Off-Chain PII)</p>
+                           <p className="text-xs text-slate-600 font-medium">Voter Names, SSNs, and Physical Addresses are never written to the ledger. They remain in legacy state databases (DDS), referenced only by Zero-Knowledge proofs.</p>
+                         </div>
+                         <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                           <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">Immutable (On-Chain Tally)</p>
+                           <p className="text-xs text-slate-600 font-medium">The issuance of the blank ballot (UTXO), the timestamp of the cast, and the final destination contract are strictly immutable, providing a perfect public audit trail of the count.</p>
+                         </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 bg-white rounded-xl border border-amber-200 shadow-sm p-6">
+                     <h3 className="font-bold text-amber-900 border-b border-amber-200 pb-2 mb-4 flex items-center">
+                       <ScaleIcon size={18} className="mr-2 text-amber-600"/> Supreme Court Remedy: End-to-End Verifiability (E2E-V)
+                     </h3>
+                     <div className="flex flex-col md:flex-row gap-6">
+                       <div className="flex-1 space-y-3">
+                         <p className="text-sm font-bold text-slate-800">Mandate: In re Digital Democratic Integrity</p>
+                         <p className="text-xs text-slate-600 leading-relaxed">The Supreme Court recently ruled that citizens using digital voting systems must have the absolute right to verify their specific ballot was included in the final state tally. However, doing so must not generate a receipt that allows the citizen to prove *how* they voted to a third-party, which would enable coercion and vote-buying.</p>
+                       </div>
+                       <div className="flex-1 bg-amber-50 p-4 rounded-lg border border-amber-100">
+                         <p className="text-[10px] uppercase font-bold text-amber-800 mb-1">BEARER Protocol Resolution</p>
+                         <p className="text-xs text-slate-700 font-medium mb-2">Implementation of the <span className="font-bold text-emerald-600">Decoupled Bearer Key (DBK)</span>.</p>
+                         <p className="text-[10px] text-slate-600">Upon envelope sealing, the compiler emits a one-way homomorphic hash (the DBK) back to the voter. The citizen can query the public bulletin board using this key to mathematically guarantee inclusion, but the payload remains entangled in the Hybrid Ring Ledger, making vote-proving impossible. This achieves EAC VVSG 2.0 Software Independence.</p>
+                       </div>
+                     </div>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-900 rounded-xl border border-slate-700 shadow-sm p-6">
+                       <h3 className="font-bold text-white border-b border-slate-700 pb-2 mb-4 flex items-center">
+                         <ShieldCheckIcon size={18} className="mr-2 text-emerald-400"/> NIST Post-Quantum Cryptography
+                       </h3>
+                       <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+                         To mitigate "harvest now, decrypt later" threats, BEARER enforces the newly standardized <span className="font-bold text-emerald-300">NIST PQC algorithms</span> for all critical election data.
+                       </p>
+                       <div className="bg-slate-800 p-3 rounded text-xs text-slate-300 border border-slate-600">
+                         Ballot signatures and key agreements utilize <span className="font-mono text-emerald-400">ML-DSA</span> and <span className="font-mono text-emerald-400">ML-KEM</span>. This ensures the secrecy of the ballot payload remains mathematically unbreakable even when Cryptographically Relevant Quantum Computers (CRQCs) become viable.
+                       </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                       <h3 className="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center">
+                         <UsersIcon size={18} className="mr-2 text-blue-600"/> NIST SP 800-63 Identity Proofing (IAL2/AAL3)
+                       </h3>
+                       <p className="text-xs text-slate-600 mb-3 leading-relaxed">
+                         To prevent Sybil attacks (fraudulent voter generation) and comply with GovRAMP mandates, BEARER strictly enforces <span className="font-bold text-blue-700">IAL2 (Identity Assurance Level 2)</span> and <span className="font-bold text-blue-700">AAL3 (Authenticator Assurance Level 3)</span> during registration.
+                       </p>
+                       <div className="bg-blue-50 p-3 rounded text-xs text-blue-800 border border-blue-200">
+                         Biometric verification against DMV/DDS databases is hashed into the ZK-FIP payload (IAL2). The physical polling terminal attestation, combined with PIV/CAC smart cards for administrators and UOCAVA voters, satisfies the phishing-resistant AAL3 requirement.
+                       </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:col-span-2">
+                       <h3 className="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4 flex items-center">
+                         <Volume2Icon size={18} className="mr-2 text-blue-600"/> Section 508 & ADA Compliance
+                       </h3>
+                       <p className="text-xs text-slate-600 mb-3 leading-relaxed">
+                         Under the Americans with Disabilities Act and Section 508 of the Rehabilitation Act, digital voting systems must provide equal access to all citizens regardless of physical ability.
+                       </p>
+                       <div className="bg-blue-50 p-3 rounded text-xs text-blue-800 border border-blue-200 font-medium">
+                         The Smart Contract ABI enforces screen-reader (WCAG 2.1 AA) compatibility metadata on all instrument renderings. It universally supports authorized hardware terminals casting votes via sip-and-puff or audio-tactile interfaces.
+                       </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* SIP COMPLIANCE REPORT */}
+              {activeTab === 'sip_report' && (
+                <div className="max-w-4xl mx-auto animate-in fade-in space-y-6">
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-8 border-b border-slate-200 bg-purple-900 text-white">
+                      <div className="flex items-center mb-2">
+                        <DatabaseIcon size={24} className="mr-3 text-purple-300" />
+                        <h2 className="text-2xl font-bold tracking-tight">SIP Verification & Compliance</h2>
+                      </div>
+                      <p className="text-purple-200 text-sm">System Security Plan (SSP) Addendum - Algorithmic Entities</p>
+                    </div>
+                    
+                    <div className="p-8 space-y-8 text-slate-700">
+                      <section>
+                        <h3 className="text-lg font-bold text-slate-900 mb-3 pb-2 border-b border-slate-100">1. Executive Summary</h3>
+                        <p className="text-sm leading-relaxed mb-3">
+                          The introduction of the Synthetic Intelligent Personhood (SIP) framework allows voters to mathematically delegate executive or legislative authority directly to an audited, deterministic Non-Human Entity (NHE) via a Smart Contract.
+                        </p>
+                        <p className="text-sm leading-relaxed">
+                          Because traditional Voluntary Voting System Guidelines (VVSG 2.0) assume candidates are biological humans, the BEARER Protocol has implemented a strict cryptographic bounding box. This ensures that any AI/algorithmic entity on the ballot is transparent, its code is immutable, and its execution remains entirely dependent on citizen-issued Decoupled Bearer Keys (DBKs).
+                        </p>
+                      </section>
+
+                      <section>
+                        <h3 className="text-lg font-bold text-slate-900 mb-3 pb-2 border-b border-slate-100">2. Modifications Made for SIP Compliance</h3>
+                        <ul className="space-y-4 text-sm">
+                          <li className="flex items-start">
+                            <CheckCircleIcon size={18} className="text-emerald-500 mr-3 mt-0.5 shrink-0" />
+                            <div><strong className="text-slate-900 block">Asset Categorization:</strong> Created a new class of UTXO: <code className="bg-slate-100 px-1 rounded text-purple-600 text-xs">Synthetic Intelligent Personhood (SIP) Ballot</code>. This flags the transaction payload distinctly from standard human candidate ballots.</div>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckCircleIcon size={18} className="text-emerald-500 mr-3 mt-0.5 shrink-0" />
+                            <div><strong className="text-slate-900 block">Cryptographic Charter Validation:</strong> Modified the compiled UTXO execution script to include <code className="bg-slate-100 px-1 rounded text-purple-600 text-xs">assert!(validate_nhe_charter_hash(tx.dest));</code>. This mathematically guarantees that the algorithm the citizen is voting for has not been altered since its initial 3PAO security audit.</div>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckCircleIcon size={18} className="text-emerald-500 mr-3 mt-0.5 shrink-0" />
+                            <div><strong className="text-slate-900 block">Kill-Switch Integration:</strong> Added a GovRAMP toggle in the Ballot Studio, allowing jurisdiction operators to instantly fork NHEs off the ballot ledger if an anomaly is detected.</div>
+                          </li>
+                        </ul>
+                      </section>
+
+                      <section className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <h3 className="text-lg font-bold text-slate-900 mb-3">3. Allowable Applications (GovRAMP High)</h3>
+                        <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest font-bold">"Black-box" LLMs are strictly prohibited from autonomous action.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                            <strong className="text-blue-700 block mb-1">Municipal Resource Allocation</strong>
+                            Algorithms designed for hyper-efficient, unbiased distribution of municipal funds (e.g., smart grid distribution, automated pothole repair funding via IoT sensors).
+                          </div>
+                          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                            <strong className="text-purple-700 block mb-1">Continuous Proxy Representation</strong>
+                            Citizens delegate their DBK to an algorithmic proxy contract. The citizen updates preferences on a rolling basis, and the SIP automatically executes votes mimicking the real-time will of its DBK holders.
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SETTINGS / BALLOT STUDIO */}
+              {activeTab === 'settings' && (
+                <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
+                  <div className="p-6 border-b border-slate-200 bg-slate-50 flex items-center">
+                    <SettingsIcon size={24} className="mr-3 text-blue-600" />
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">Ballot Design Studio & Platform Config</h2>
+                      <p className="text-xs text-slate-500 mt-1">Configure the visual representation of cryptographically secure instruments and core system rules.</p>
+                    </div>
+                  </div>
+                  <div className="p-8 space-y-8">
+                    <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 text-white space-y-6">
+                      <h3 className="text-lg font-bold flex items-center border-b border-slate-700 pb-3">
+                        <ShieldCheckIcon size={20} className="mr-2 text-blue-400" /> GovRAMP Compliance Directives
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex items-center justify-between bg-slate-800 p-4 rounded-lg border border-slate-700">
+                          <div>
+                            <p className="font-bold text-sm">Post-Quantum Crypto (ML-DSA)</p>
+                            <p className="text-[10px] text-slate-400 mt-1">Enforce NIST PQC standards for signatures.</p>
+                          </div>
+                          <button onClick={() => setGovRampConfig(p => ({...p, enforcePQC: !p.enforcePQC}))} className={`w-10 h-5 rounded-full transition-colors flex items-center px-1 cursor-pointer ${govRampConfig.enforcePQC ? 'bg-emerald-500' : 'bg-slate-600'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white transition-transform ${govRampConfig.enforcePQC ? 'transform translate-x-5' : ''}`} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between bg-slate-800 p-4 rounded-lg border border-slate-700">
+                          <div>
+                            <p className="font-bold text-sm">VVSG 2.0 Software Independence</p>
+                            <p className="text-[10px] text-slate-400 mt-1">Mandate ZK-TR generation for auditing.</p>
+                          </div>
+                          <button onClick={() => setGovRampConfig(p => ({...p, enforceVVSG2: !p.enforceVVSG2}))} className={`w-10 h-5 rounded-full transition-colors flex items-center px-1 cursor-pointer ${govRampConfig.enforceVVSG2 ? 'bg-emerald-500' : 'bg-slate-600'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white transition-transform ${govRampConfig.enforceVVSG2 ? 'transform translate-x-5' : ''}`} />
+                          </button>
+                        </div>
+
+                        {/* SIP TOGGLE */}
+                        <div className="flex items-center justify-between bg-slate-800 p-4 rounded-lg border border-slate-700 md:col-span-2">
+                          <div>
+                            <p className="font-bold text-sm text-purple-300">Synthetic Entity (SIP) Ballot Access</p>
+                            <p className="text-[10px] text-slate-400 mt-1">Allow jurisdiction operators to issue ballots explicitly allowing algorithmic candidates. Requires valid 3PAO charter hash.</p>
+                          </div>
+                          <button onClick={() => setGovRampConfig(p => ({...p, allowSyntheticCandidates: !p.allowSyntheticCandidates}))} className={`w-10 h-5 rounded-full transition-colors flex items-center px-1 cursor-pointer ${govRampConfig.allowSyntheticCandidates ? 'bg-purple-500' : 'bg-slate-600'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white transition-transform ${govRampConfig.allowSyntheticCandidates ? 'transform translate-x-5' : ''}`} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                         <div className="flex justify-between items-center mb-2">
+                           <p className="font-bold text-sm">Base Risk-Limiting Audit (RLA) Threshold</p>
+                           <p className="font-mono text-emerald-400 text-sm">{govRampConfig.rlaThreshold}% Limit</p>
+                         </div>
+                         <input 
+                           type="range" 
+                           min="1" max="10" step="0.5" 
+                           value={govRampConfig.rlaThreshold} 
+                           onChange={(e) => setGovRampConfig(p => ({...p, rlaThreshold: parseFloat(e.target.value)}))}
+                           className="w-full accent-blue-500 cursor-pointer" 
+                         />
+                         <p className="text-[10px] text-slate-400 mt-2">Sets the baseline maximum acceptable probability that the audit will fail to correct a wrong reported outcome. (Note: System dynamically adjusts this based on load).</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">State Accent Color</label>
+                      <div className="flex items-center space-x-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <input 
+                          type="color" 
+                          value={designConfig.primaryColor} 
+                          onChange={(e) => setDesignConfig(prev => ({
+                            ...prev, 
+                            primaryColor: e.target.value
+                          }))} 
+                          className="w-16 h-16 p-1 rounded-lg border-2 border-slate-300 cursor-pointer bg-white shadow-sm"
+                        />
+                        <div>
+                          <span className="text-sm font-mono font-bold text-slate-700 bg-white px-3 py-1.5 rounded border border-slate-200">
+                            {designConfig.primaryColor}
+                          </span>
+                          <p className="text-[10px] text-slate-400 mt-2 max-w-xs leading-relaxed">
+                            This color dynamically updates the physical seals, borders, and accents on all generated Skeumorphic deeds.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-4 border-t border-slate-100 flex justify-end">
+                      <button onClick={() => showToast("Portal preferences saved across all edge nodes.", "success")} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl shadow-md hover:bg-blue-700 transition-colors">
+                        Deploy Settings
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </main>
+          </div>
+
+        {}
+        {selectedDeed && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm transition-all" onClick={() => { setSelectedDeed(null); setIsDocumentFlipped(false); setIsCasting(false); setCastStep(0); }}>
+            
+            <div className="relative w-full h-full flex items-center justify-center pointer-events-none">
+              <div className="pointer-events-auto w-full flex items-center justify-center h-full max-h-[90vh]">
+                <SkeumorphicInstrument 
+                  deed={selectedDeed}
+                  isFlipped={isDocumentFlipped}
+                  onFlipFront={() => setIsDocumentFlipped(false)}
+                  onFlipBack={() => setIsDocumentFlipped(true)}
+                  onCast={() => setIsCasting(true)}
+                  designConfig={designConfig}
+                />
+              </div>
+
+              <button onClick={() => setSelectedDeed(null)} className="pointer-events-auto absolute top-6 right-6 p-3 bg-white text-slate-800 hover:bg-slate-200 rounded-full shadow-2xl transition-transform hover:scale-110 z-[110]"><XIcon size={24} /></button>
+            </div>
+
+            {/* CAST BALLOT MODAL */}
+            {isCasting && (
+              <div className="absolute inset-0 z-[120] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                
+                {castStep === 0 && (
+                  <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-xl border border-slate-200 animate-in zoom-in-95">
+                    <h3 className="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight text-center">Cast Ballot Securely</h3>
+                    
+                    {/* ADA Audio-Tactile Indicator */}
+                    <div className="flex justify-center mb-6">
+                      <span className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        <Volume2Icon size={12} className="mr-1.5"/> Sec. 508 Audio-Tactile / SIP-PUFF Supported
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleCastBallot} className="space-y-4">
+                      <div className="space-y-3 mb-6 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                        {['Candidate A (Incumbent)', 'Candidate B (Challenger)', 'Candidate C (Independent)', 'Write-In', 
+                          ...(selectedDeed && (selectedDeed.type || '').includes('Synthetic') ? ['AGI-4 Candidate (Synthetic Entity)'] : [])
+                        ].map(cand => (
+                          <label key={cand} className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${castCandidate === cand ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-emerald-200'}`}>
+                            <input type="radio" name="candidate" value={cand} checked={castCandidate === cand} onChange={(e) => setCastCandidate(e.target.value)} className="w-5 h-5 accent-emerald-600 mr-4" />
+                            <span className="font-bold text-slate-800">{cand}</span>
+                          </label>
+                        ))}
+                      </div>
+
+                      {/* SIP Dynamic Warning */}
+                      {castCandidate === 'AGI-4 Candidate (Synthetic Entity)' && (
+                         <div className="bg-purple-50 p-4 rounded-lg flex items-start space-x-3 mb-6 border border-purple-200 shadow-inner">
+                           <DatabaseIcon size={24} className="text-purple-600 shrink-0 mt-0.5 animate-pulse" />
+                           <div>
+                             <p className="text-[11px] uppercase tracking-widest text-purple-700 font-bold mb-1">NHE Smart Contract Selected</p>
+                             <p className="text-xs text-purple-800 leading-relaxed">
+                               You are delegating executive authority to an algorithmic entity. Validation script <strong>assert!(validate_nhe_charter_hash(tx.dest))</strong> will execute prior to ledger entry.
+                             </p>
+                           </div>
+                         </div>
+                      )}
+                      
+                      <div className="bg-slate-100 p-4 rounded-lg flex items-start space-x-3 mb-6 border border-slate-200 shadow-inner">
+                        <FingerprintIcon size={24} className="text-emerald-600 shrink-0 mt-0.5 animate-pulse" />
+                        <div>
+                          <p className="text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-1">Terminal MAC: AA:BB:CC:11:22:33</p>
+                          <p className="text-xs text-slate-700 leading-relaxed">
+                            <strong>Biometric-to-ZKP Ephemeral Session:</strong><br/>
+                            Your hardware attestation just generated an invisible, single-use wallet for this transaction. It will self-destruct upon DBK issuance to protect your privacy.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-3">
+                        <button type="button" onClick={() => setIsCasting(false)} className="flex-1 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors">Cancel</button>
+                        <button type="submit" disabled={!castCandidate} className="flex-2 w-2/3 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg hover:bg-emerald-500 flex justify-center items-center disabled:opacity-50 cursor-pointer transition-colors">
+                          <LockIcon size={18} className="mr-2"/> Sign (ML-DSA) & Execute
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {castStep === 1 && (
+                  <div className="bg-slate-900 p-10 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-700 text-center animate-in zoom-in-95 text-white">
+                     <div className="relative w-24 h-24 mx-auto mb-6">
+                       <RefreshCcwIcon size={48} className="absolute inset-0 m-auto text-purple-500 animate-spin" />
+                       <EyeOffIcon size={24} className="absolute inset-0 m-auto text-white z-10" />
+                     </div>
+                     <h3 className="text-xl font-black mb-2 uppercase tracking-widest text-purple-400">Applying Secret Ballot</h3>
+                     <p className="text-[10px] text-slate-400 font-mono mt-4 leading-relaxed">
+                       Executing Zero-Knowledge Mixnet.<br/>
+                       <span className="text-emerald-400 font-bold">Dynamic Decoy Scaling Active.</span><br/>
+                       Ring size optimized for current polling volume. Severing origin wallet link...
+                     </p>
+                  </div>
+                )}
+
+                {castStep === 2 && (
+                  <div className="bg-slate-900 p-10 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-700 text-center animate-in zoom-in-95 text-white">
+                     <div className="w-24 h-24 mx-auto mb-6 relative">
+                       <div className="absolute inset-0 bg-indigo-900/50 rounded-full flex items-center justify-center border-4 border-indigo-500">
+                         <EnvelopeIcon size={40} className="text-indigo-400" />
+                       </div>
+                       <div className="absolute -bottom-2 -right-2 bg-amber-500/20 p-2 rounded-full border border-amber-500 backdrop-blur-sm animate-bounce">
+                         <KeyIcon size={16} className="text-amber-400" />
+                       </div>
+                     </div>
+                     <h3 className="text-xl font-black mb-2 uppercase tracking-widest text-indigo-400">Sealing Envelope</h3>
+                     <p className="text-[10px] text-slate-400 font-mono mt-4 leading-relaxed">
+                       Encrypting payload to Sharded District Mempool.<br/>Applying temporal lock (20:00:00 LOC)...<br/><br/>
+                       <span className="text-amber-400 font-bold">Emitting Decoupled Bearer Key (DBK) & Destroying Ephemeral Wallet...</span>
+                     </p>
+                  </div>
+                )}
+
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+  </script>
+</body>
+</html>
