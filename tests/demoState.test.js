@@ -21,6 +21,15 @@ test("loadDemoData populates deterministic precincts and selects the first one",
   assert.match(state.statusMessage, /Synthetic precinct data loaded/i);
 });
 
+test("loadDemoData supports an empty-data state", () => {
+  const state = loadDemoData(beginLoading(createInitialState()), []);
+
+  assert.equal(state.status, "ready");
+  assert.equal(state.jurisdictions.length, 0);
+  assert.equal(state.selectedJurisdictionId, "");
+  assert.match(state.statusMessage, /No demonstration precincts are available/i);
+});
+
 test("castBallot updates only the selected jurisdiction and records local activity", () => {
   let state = loadDemoData(createInitialState());
   state = selectJurisdiction(state, state.jurisdictions[1].id);

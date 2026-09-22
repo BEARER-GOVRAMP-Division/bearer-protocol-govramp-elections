@@ -46,6 +46,7 @@ const DEFAULT_DRAFT = Object.freeze({
   contest: CONTEST_OPTIONS[0].value,
   choice: ""
 });
+const ALLOWED_DRAFT_FIELDS = new Set(Object.keys(DEFAULT_DRAFT));
 
 function cloneJurisdiction(jurisdiction) {
   return { ...jurisdiction };
@@ -101,7 +102,13 @@ export function loadFailure(state, message) {
     ...state,
     status: "error",
     error: message || "Unable to load the demonstration data.",
-    statusMessage: "The demo could not initialize."
+    statusMessage: "The demo could not initialize.",
+    jurisdictions: [],
+    selectedJurisdictionId: "",
+    activity: [],
+    isBallotModalOpen: false,
+    ballotDraft: createDefaultDraft(),
+    lastSimulationRecord: null
   };
 }
 
@@ -130,6 +137,10 @@ export function closeBallotModal(state) {
 }
 
 export function updateBallotDraft(state, field, value) {
+  if (!ALLOWED_DRAFT_FIELDS.has(field)) {
+    throw new Error(`Unknown ballot field: ${field}`);
+  }
+
   return {
     ...state,
     ballotDraft: {

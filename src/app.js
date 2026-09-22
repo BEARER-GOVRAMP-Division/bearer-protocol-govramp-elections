@@ -24,6 +24,16 @@ if (!root) {
 let state = createInitialState();
 let previousModalOpen = false;
 let restoreFocusSelector = '[data-action="open-ballot-modal"]';
+let activeLoadToken = 0;
+let loadTimerId = null;
+
+function clearPendingLoad() {
+  activeLoadToken += 1;
+  if (loadTimerId !== null) {
+    window.clearTimeout(loadTimerId);
+    loadTimerId = null;
+  }
+}
 
 function statusClassFor(jurisdiction) {
   return jurisdiction.status === "Simulation active" ? "status-review" : "status-ready";
@@ -76,7 +86,7 @@ function renderJurisdictions(selectedJurisdiction) {
           (jurisdiction) => `
             <article
               class="jurisdiction-card"
-              aria-current="${selectedJurisdiction?.id === jurisdiction.id}"
+              ${selectedJurisdiction?.id === jurisdiction.id ? 'aria-current="true"' : ""}
             >
               <div class="list-header">
                 <div>
@@ -145,11 +155,13 @@ function renderModal() {
   return `
     <div class="modal-backdrop" data-action="dismiss-modal">
       <div
+        id="ballot-dialog"
         class="modal-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
         aria-describedby="modal-description"
+        tabindex="-1"
       >
         <h2 id="modal-title">Record a simulated ballot update</h2>
         <p id="modal-description" class="muted">
@@ -278,6 +290,9 @@ function render() {
 
   if (state.isBallotModalOpen && !previousModalOpen) {
     document.querySelector("#voterAlias")?.focus();
+    if (document.activeElement?.id !== "voterAlias") {
+      document.querySelector("#ballot-dialog")?.focus();
+    }
   } else if (!state.isBallotModalOpen && previousModalOpen) {
     document.querySelector(restoreFocusSelector)?.focus();
   }
@@ -291,11 +306,19 @@ function setState(updater) {
 }
 
 function loadData() {
+  clearPendingLoad();
+  const loadToken = activeLoadToken;
   setState((current) => beginLoading(current));
-  window.setTimeout(() => {
+  loadTimerId = window.setTimeout(() => {
     try {
-      setState((current) => loadDemoData(current));
+      if (loadToken !== activeLoadToken) {
+        return;
+      }
+
+      loadTimerId = null;
+      setState((current) => (current.status === "loading" ? loadDemoData(current) : current));
     } catch (error) {
+      loadTimerId = null;
       setState((current) => loadFailure(current, error instanceof Error ? error.message : "Unable to load the demo."));
     }
   }, 250);
@@ -331,6 +354,7 @@ function handleClick(event) {
   }
 
   if (action === "reset-demo") {
+    clearPendingLoad();
     setState(() => resetSimulation());
     return;
   }
