@@ -442,4 +442,4 @@ document.addEventListener("input", handleInput);
 document.addEventListener("submit", handleSubmit);
 document.addEventListener("keydown", handleKeydown);
 
-render();
+loadData();

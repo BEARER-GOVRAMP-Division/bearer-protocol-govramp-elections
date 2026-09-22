@@ -51,7 +51,7 @@ This performs:
 
 ## Demo behavior
 
-- Loading the app requires a user action to populate synthetic precinct data.
+- Loading the app automatically initializes synthetic precinct data for immediate viewing.
 - “Record simulated ballot” updates only local in-memory state in the current browser session.
 - Resetting the session clears all locally simulated activity.
 - Success messaging is intentionally qualified so it does not imply a real vote was cast or counted.
