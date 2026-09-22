@@ -7,6 +7,7 @@ import {
   createInitialState,
   deriveTotals,
   loadDemoData,
+  openBallotModal,
   resetSimulation,
   selectJurisdiction,
   updateBallotDraft
@@ -28,6 +29,22 @@ test("loadDemoData supports an empty-data state", () => {
   assert.equal(state.jurisdictions.length, 0);
   assert.equal(state.selectedJurisdictionId, "");
   assert.match(state.statusMessage, /No demonstration precincts are available/i);
+});
+
+test("loadDemoData resets transient modal and activity state on reload", () => {
+  let state = loadDemoData(createInitialState());
+  state = openBallotModal(state);
+  state = updateBallotDraft(state, "voterAlias", "demo-user-01");
+  state = updateBallotDraft(state, "precinct", "Ward 3");
+  state = updateBallotDraft(state, "choice", "option-b");
+  state = castBallot(state);
+  state = openBallotModal(state);
+
+  const reloaded = loadDemoData(state);
+
+  assert.equal(reloaded.activity.length, 0);
+  assert.equal(reloaded.isBallotModalOpen, false);
+  assert.equal(reloaded.lastSimulationRecord, null);
 });
 
 test("castBallot updates only the selected jurisdiction and records local activity", () => {

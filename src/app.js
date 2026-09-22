@@ -36,7 +36,7 @@ function clearPendingLoad() {
 }
 
 function statusClassFor(jurisdiction) {
-  return jurisdiction.status === "Simulation active" ? "status-review" : "status-ready";
+  return jurisdiction.status === "Simulation active" ? "status-active" : "status-ready";
 }
 
 function escapeHtml(value) {
@@ -235,55 +235,57 @@ function render() {
         ? `<div class="banner banner-success" role="status">${escapeHtml(state.statusMessage)}</div>`
         : `<div class="banner banner-warning" role="status">${escapeHtml(state.statusMessage)}</div>`
     }
-    <section class="stack" aria-label="Simulation controls">
-      ${renderStats(totals)}
-      <div class="panel">
-        <h2>Control panel</h2>
-        <p class="muted">
-          This demo never leaves your browser session. Reloading or resetting clears all simulated activity.
-        </p>
-        <div class="toolbar">
-          <button class="button button-primary" type="button" data-action="load-demo-data" ${state.status === "loading" ? "disabled" : ""}>
-            ${state.status === "loading" ? "Loading…" : "Load demo data"}
-          </button>
-          <button class="button button-secondary" type="button" data-action="open-ballot-modal" ${!selectedJurisdiction || state.status !== "ready" ? "disabled" : ""}>
-            Record simulated ballot
-          </button>
-          <button class="button button-danger" type="button" data-action="reset-demo">
-            Reset session
-          </button>
+    <div id="app-content" ${state.isBallotModalOpen ? 'aria-hidden="true" inert' : ""}>
+      <section class="stack" aria-label="Simulation controls">
+        ${renderStats(totals)}
+        <div class="panel">
+          <h2>Control panel</h2>
+          <p class="muted">
+            This demo never leaves your browser session. Reloading or resetting clears all simulated activity.
+          </p>
+          <div class="toolbar">
+            <button class="button button-primary" type="button" data-action="load-demo-data" ${state.status === "loading" ? "disabled" : ""}>
+              ${state.status === "loading" ? "Loading…" : "Load demo data"}
+            </button>
+            <button class="button button-secondary" type="button" data-action="open-ballot-modal" ${!selectedJurisdiction || state.status !== "ready" ? "disabled" : ""}>
+              Record simulated ballot
+            </button>
+            <button class="button button-danger" type="button" data-action="reset-demo">
+              Reset session
+            </button>
+          </div>
         </div>
+      </section>
+      <div class="two-col" style="margin-top: 1rem;">
+        <section class="panel" aria-labelledby="jurisdiction-title">
+          <h2 id="jurisdiction-title">Synthetic precinct overview</h2>
+          <p class="muted">Select a precinct to inspect the local simulation totals.</p>
+          ${renderJurisdictions(selectedJurisdiction)}
+        </section>
+        <section class="stack">
+          <article class="panel" aria-labelledby="selected-title">
+            <h2 id="selected-title">Selected precinct</h2>
+            ${
+              selectedJurisdiction
+                ? `
+                  <h3>${escapeHtml(selectedJurisdiction.name)}</h3>
+                  <p class="muted">${escapeHtml(selectedJurisdiction.region)}</p>
+                  <div class="grid">
+                    <div><span class="muted">Registered voters</span><strong>${selectedJurisdiction.registeredVoters}</strong></div>
+                    <div><span class="muted">Simulated ballots</span><strong>${selectedJurisdiction.simulatedBallots}</strong></div>
+                    <div><span class="muted">Demo audits</span><strong>${selectedJurisdiction.demoAudits}</strong></div>
+                  </div>
+                `
+                : `<div class="empty-state">Load data and choose a precinct to continue.</div>`
+            }
+          </article>
+          <article class="panel" aria-labelledby="activity-title">
+            <h2 id="activity-title">Activity log</h2>
+            <p class="muted">Most recent synthetic actions are kept for transparency inside this local session.</p>
+            ${renderActivity()}
+          </article>
+        </section>
       </div>
-    </section>
-    <div class="two-col" style="margin-top: 1rem;">
-      <section class="panel" aria-labelledby="jurisdiction-title">
-        <h2 id="jurisdiction-title">Synthetic precinct overview</h2>
-        <p class="muted">Select a precinct to inspect the local simulation totals.</p>
-        ${renderJurisdictions(selectedJurisdiction)}
-      </section>
-      <section class="stack">
-        <article class="panel" aria-labelledby="selected-title">
-          <h2 id="selected-title">Selected precinct</h2>
-          ${
-            selectedJurisdiction
-              ? `
-                <h3>${escapeHtml(selectedJurisdiction.name)}</h3>
-                <p class="muted">${escapeHtml(selectedJurisdiction.region)}</p>
-                <div class="grid">
-                  <div><span class="muted">Registered voters</span><strong>${selectedJurisdiction.registeredVoters}</strong></div>
-                  <div><span class="muted">Simulated ballots</span><strong>${selectedJurisdiction.simulatedBallots}</strong></div>
-                  <div><span class="muted">Demo audits</span><strong>${selectedJurisdiction.demoAudits}</strong></div>
-                </div>
-              `
-              : `<div class="empty-state">Load data and choose a precinct to continue.</div>`
-          }
-        </article>
-        <article class="panel" aria-labelledby="activity-title">
-          <h2 id="activity-title">Activity log</h2>
-          <p class="muted">Most recent synthetic actions are kept for transparency inside this local session.</p>
-          ${renderActivity()}
-        </article>
-      </section>
     </div>
     ${renderModal()}
   `;
@@ -387,7 +389,8 @@ function handleSubmit(event) {
   event.preventDefault();
 
   try {
-    setState((current) => castBallot(current));
+    const nextState = castBallot(state);
+    setState(nextState);
   } catch (error) {
     setState((current) => ({
       ...current,
@@ -412,8 +415,10 @@ function handleKeydown(event) {
   }
 
   const focusable = Array.from(
-    document.querySelectorAll('.modal-card button, .modal-card input, .modal-card select')
-  ).filter((element) => !element.hasAttribute("disabled"));
+    document.querySelectorAll(
+      '#ballot-dialog a[href], #ballot-dialog button:not([disabled]), #ballot-dialog input:not([disabled]), #ballot-dialog select:not([disabled]), #ballot-dialog textarea:not([disabled]), #ballot-dialog [tabindex]:not([tabindex="-1"])'
+    )
+  );
 
   if (!focusable.length) {
     return;
