@@ -2,6 +2,7 @@
 
 This repository contains a **conceptual election-infrastructure demonstration** for the BEARER Protocol. It is **not a real voting system**, does **not** process real votes or identities, and does **not** represent a government authorization, certification, legal ruling, or validated cryptographic implementation.
 
+- Open the demo: [`index.html`](./index.html)
 - Main entry point: `BEARER_Protocol_Application.html`
 - Project guide: `Repository_README.md`
 - Supporting documents:
@@ -15,7 +16,7 @@ cd bearer-protocol-govramp-elections
 python3 -m http.server 8000
 ```
 
-Then open `http://localhost:8000/BEARER_Protocol_Application.html`.
+Then open `http://localhost:8000/` and select **Open the demo**.
 
 ## Validation
 

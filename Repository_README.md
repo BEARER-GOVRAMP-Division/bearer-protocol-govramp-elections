@@ -32,9 +32,9 @@ python3 -m http.server 8000
 
 Open:
 
-- `http://localhost:8000/BEARER_Protocol_Application.html`
+- `http://localhost:8000/`
 
-You can also open the HTML file directly in a browser that supports ES modules, but a local static server is recommended.
+The root page includes an **Open the demo** link to `BEARER_Protocol_Application.html`. You can also open the HTML file directly in a browser that supports ES modules, but a local static server is recommended.
 
 ## Validation
 
