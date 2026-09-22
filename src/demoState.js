@@ -60,7 +60,7 @@ export function createInitialState() {
   return {
     status: "idle",
     error: "",
-    statusMessage: "Load synthetic precinct data to begin the demo.",
+    statusMessage: "Activate the demo to view synthetic precinct data.",
     jurisdictions: [],
     selectedJurisdictionId: "",
     activity: [],
