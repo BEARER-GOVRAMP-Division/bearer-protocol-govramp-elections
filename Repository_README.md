@@ -2,13 +2,14 @@
 
 ## Overview
 
-This repository contains a **browser-only conceptual demonstration** for election-operations workflows branded around the BEARER Protocol. The app is intentionally limited to synthetic client-side data so the repository can be reviewed, run locally, and validated without external services.
+This repository is the **BEARER Protocol Elections Unified Edition**, a browser-only conceptual demonstration for election-operations workflows branded around the BEARER Protocol. The unified edition lives in `BEARER-GOVRAMP-Division/bearer-protocol-govramp-elections` and is intentionally limited to synthetic client-side data so the repository can be reviewed, run locally, and validated without external services.
 
 ## Prominent disclaimer
 
 - This is **not** a real voting system.
-- This repository does **not** process real votes, voter identities, credentials, biometrics, cryptographic keys, or government records.
+- This repository does **not** process real votes, voter identities, credentials, biometrics, cryptographic keys, government records, or production election data.
 - This repository does **not** establish a real GovRAMP authorization, ISO certification, SCOTUS mandate, FIPS validation, SAR result, or 3PAO assessment.
+- This repository does **not** implement Google Cloud Assured Workloads integration or synchronization.
 - References to compliance, audits, privacy, biometrics, cryptography, and chain-of-custody are illustrative placeholders for planning discussions only.
 
 ## Project structure
@@ -17,7 +18,9 @@ This repository contains a **browser-only conceptual demonstration** for electio
 - `src/app.js` — UI rendering and browser interactions
 - `src/demoState.js` — pure demo state transitions used by both the UI and automated tests
 - `tests/demoState.test.js` — Node-based tests for core simulation state changes
+- `tests/repositoryMetadata.test.js` — Node-based tests for branding and consolidation metadata
 - `scripts/validate-demo.js` — lightweight validation for key files and required disclaimer text
+- `CONSOLIDATION.md` — unified-edition consolidation summary and source-material record
 - `ISO_Statement_of_Applicability.md` — conceptual placeholder document
 - `GovRAMP_Fast-Track_Proposal.md` — conceptual placeholder proposal
 
@@ -47,7 +50,7 @@ npm run check
 This performs:
 
 1. `npm run validate` — static validation for required files and disclaimer language
-2. `npm test` — state-transition tests using Node’s built-in test runner
+2. `npm test` — state-transition tests and repository metadata checks using Node’s built-in test runner
 
 ## Demo behavior
 
@@ -71,7 +74,7 @@ This performs:
 - No independent security review or threat model
 - No Section 508/WCAG accessibility certification
 - No privacy impact assessment, records-retention policy, or operational monitoring
-- No hardware security module, key ceremony, or certified cryptographic boundary
+- No hardware security module, key ceremony, certified cryptographic boundary, or Google Cloud Assured Workloads synchronization
 - No compliance evidence package suitable for procurement or deployment decisions
 
 ## Roadmap before any real-world use

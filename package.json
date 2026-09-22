@@ -1,7 +1,8 @@
 {
-  "name": "bearer-protocol-govramp-elections",
+  "name": "bearer-protocol-elections-unified-edition",
   "version": "0.1.0",
   "private": true,
+  "description": "BEARER Protocol Elections Unified Edition conceptual browser demo.",
   "type": "module",
   "scripts": {
     "validate": "node ./scripts/validate-demo.js",

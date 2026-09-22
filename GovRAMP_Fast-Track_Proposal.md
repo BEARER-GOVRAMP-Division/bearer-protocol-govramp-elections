@@ -1,8 +1,8 @@
-# GovRAMP Fast-Track Proposal (Conceptual Demo Draft)
+# GovRAMP Fast-Track Proposal (Conceptual Demo Draft for the Unified Edition)
 
 ## Status
 
-This document is a **concept note only**. It does not represent an approved GovRAMP package, an authorization to operate, a completed security assessment report, or a government acceptance decision.
+This document is a **concept note only** for the BEARER Protocol Elections Unified Edition. It does not represent an approved GovRAMP package, an authorization to operate, a completed security assessment report, a Google Cloud Assured Workloads synchronization record, or a government acceptance decision.
 
 ## Demo framing
 
@@ -27,4 +27,4 @@ Before any real GovRAMP, FedRAMP, state certification, or procurement submission
 
 ## Non-claims
 
-This repository does **not** claim to be GovRAMP authorized, SCOTUS mandated, FIPS validated, or assessed by a 3PAO. Any such work would require separate evidence, review, and formal acceptance outside this demo repository.
+This repository does **not** claim to be GovRAMP authorized, synchronized with Google Cloud Assured Workloads, SCOTUS mandated, FIPS validated, or assessed by a 3PAO. Any such work would require separate evidence, review, and formal acceptance outside this demo repository.

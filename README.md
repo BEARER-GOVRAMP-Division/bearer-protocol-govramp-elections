@@ -1,9 +1,12 @@
-# BEARER Protocol GovRAMP Elections Demo
+# BEARER Protocol Elections Unified Edition
 
-This repository contains a **conceptual election-infrastructure demonstration** for the BEARER Protocol. It is **not a real voting system**, does **not** process real votes or identities, and does **not** represent a government authorization, certification, legal ruling, or validated cryptographic implementation.
+This repository is the **BEARER Protocol Elections Unified Edition**: a **conceptual election-infrastructure demonstration** maintained under `BEARER-GOVRAMP-Division/bearer-protocol-govramp-elections`.
+
+It is **not a real voting system**, does **not** process real votes, voter identities, government records, or production election data, and does **not** represent a government authorization, certification, legal ruling, Google Cloud Assured Workloads synchronization, or validated cryptographic implementation.
 
 - Main entry point: `BEARER_Protocol_Application.html`
 - Project guide: `Repository_README.md`
+- Consolidation record: `CONSOLIDATION.md`
 - Supporting documents:
   - `ISO_Statement_of_Applicability.md`
   - `GovRAMP_Fast-Track_Proposal.md`
