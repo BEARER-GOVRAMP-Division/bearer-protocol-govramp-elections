@@ -74,7 +74,7 @@ function renderJurisdictions(selectedJurisdiction) {
   if (!state.jurisdictions.length) {
     return `
       <div class="empty-state">
-        No synthetic precincts are loaded. Use <strong>Load demo data</strong> to initialize the prototype.
+        No synthetic precincts are loaded. Use <strong>Activate demo to view</strong> to initialize the prototype.
       </div>
     `;
   }
@@ -245,7 +245,7 @@ function render() {
           </p>
           <div class="toolbar">
             <button class="button button-primary" type="button" data-action="load-demo-data" ${state.status === "loading" ? "disabled" : ""}>
-              ${state.status === "loading" ? "Loading…" : "Load demo data"}
+              ${state.status === "loading" ? "Activating…" : "Activate demo to view"}
             </button>
             <button class="button button-secondary" type="button" data-action="open-ballot-modal" ${!selectedJurisdiction || state.status !== "ready" ? "disabled" : ""}>
               Record simulated ballot
