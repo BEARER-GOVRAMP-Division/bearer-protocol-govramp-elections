@@ -26,7 +26,7 @@ This repository contains a **browser-only conceptual demonstration** for electio
 The app uses only static files and native browser modules.
 
 ```bash
-cd /home/runner/work/bearer-protocol-govramp-elections/bearer-protocol-govramp-elections
+cd bearer-protocol-govramp-elections
 python3 -m http.server 8000
 ```
 

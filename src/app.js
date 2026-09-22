@@ -26,7 +26,7 @@ let previousModalOpen = false;
 let restoreFocusSelector = '[data-action="open-ballot-modal"]';
 
 function statusClassFor(jurisdiction) {
-  return jurisdiction.status === "Simulation active" ? "status-ready" : "status-review";
+  return jurisdiction.status === "Simulation active" ? "status-review" : "status-ready";
 }
 
 function escapeHtml(value) {
@@ -331,7 +331,7 @@ function handleClick(event) {
   }
 
   if (action === "reset-demo") {
-    setState(resetSimulation());
+    setState(() => resetSimulation());
     return;
   }
 
